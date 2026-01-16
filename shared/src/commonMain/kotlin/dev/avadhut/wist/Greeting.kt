@@ -1,0 +1,9 @@
+package dev.avadhut.wist
+
+class Greeting {
+    private val platform = getPlatform()
+
+    fun greet(): String {
+        return "Hello, ${platform.name}!"
+    }
+}
