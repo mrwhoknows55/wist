@@ -1,0 +1,10 @@
+ktor:
+  deployment:
+    port: ${?PORT}
+  application:
+    modules:
+      - dev.avadhut.wist.ApplicationKt.module
+
+firecrawl:
+  apiKey: ${?FIRECRAWL_API_KEY}
+  baseUrl: "https://api.firecrawl.dev"
