@@ -6,9 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import dev.avadhut.wist.ui.screens.ComponentDemoScreen
+import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.ui.theme.WistTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,7 +18,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             WistTheme {
-                ComponentDemoScreen()
+                val baseUrl = "http://10.0.2.2:8080"
+                App(apiClient = remember { WistApiClient(baseUrl) })
             }
         }
     }
