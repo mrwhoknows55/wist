@@ -31,9 +31,6 @@ fun App(
                 onWishlistClick = { id ->
                     selectedWishlistId = id
                     currentScreen = Screen.Detail
-                },
-                onDemoClick = {
-                    currentScreen = Screen.Demo
                 }
             )
 

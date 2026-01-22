@@ -109,6 +109,7 @@ fun WishlistDetailScreen(
             primaryText = "Add product",
             secondaryText = "", // No secondary action needed
             onPrimaryClick = { showAddSheet = true },
+            showSecondary = false,
             onSecondaryClick = {})
     }) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {

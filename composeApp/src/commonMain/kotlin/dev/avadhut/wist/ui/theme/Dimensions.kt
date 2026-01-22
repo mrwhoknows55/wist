@@ -28,6 +28,7 @@ object WistDimensions {
     // CARD DIMENSIONS
     val CardRadius = 12.dp
     val CardRadiusLarge = 16.dp
+    val CardPadding = 16.dp
     val CardElevation = 0.dp // Flat design with color differentiation
 
     

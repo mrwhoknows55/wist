@@ -4,11 +4,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -26,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.avadhut.wist.ui.theme.BackgroundCard
 import dev.avadhut.wist.ui.theme.BorderDefault
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.WistDimensions
@@ -55,25 +51,24 @@ fun ListSelectionTile(
         onClick = { onSelectionChange(!selected) },
         label = {
             Text(
-                text = text,
-                style = MaterialTheme.typography.labelLarge
+                text = text, style = MaterialTheme.typography.labelLarge
             )
         },
-        modifier = modifier.height(WistDimensions.ChipHeight),
+        modifier = modifier.padding(vertical = 6.dp).height(WistDimensions.ChipHeight),
         shape = RoundedCornerShape(WistDimensions.ChipRadius),
         border = FilterChipDefaults.filterChipBorder(
             enabled = true,
             selected = selected,
             borderColor = BorderDefault,
-            selectedBorderColor = TextPrimary,
+            selectedBorderColor = Color.Transparent, // No border when filled
             borderWidth = 1.dp,
-            selectedBorderWidth = 1.dp
+            selectedBorderWidth = 0.dp
         ),
         colors = FilterChipDefaults.filterChipColors(
             containerColor = Color.Transparent,
             labelColor = TextPrimary,
-            selectedContainerColor = Color.Transparent,
-            selectedLabelColor = TextPrimary
+            selectedContainerColor = Color.White, // Filled White
+            selectedLabelColor = Color.Black // Black text on White
         )
     )
 }
@@ -88,34 +83,27 @@ fun ListSelectionTile(
  */
 @Composable
 fun CreateNewListTile(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     FilterChip(
         selected = false,
         onClick = onClick,
-        label = {
-            Row {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
-                    tint = TextPrimary
-                )
-                Spacer(modifier = Modifier.width(
-                    WistDimensions.SpacingXs))
-                Text(
-                    text = "Create New List",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Add, contentDescription = null, tint = TextPrimary
+            )
         },
-        modifier = modifier.height(WistDimensions.ChipHeight),
+        label = {
+            Text(
+                text = "Create New List", style = MaterialTheme.typography.labelLarge
+            )
+        },
+        modifier = modifier.padding(vertical = 6.dp).height(WistDimensions.ChipHeight),
         shape = RoundedCornerShape(WistDimensions.ChipRadius),
         border = BorderStroke(1.dp, BorderDefault),
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = Color.Transparent,
-            labelColor = TextPrimary
-        )
+            containerColor = Color.Transparent, labelColor = TextPrimary
+        ),
     )
 }
 
@@ -128,10 +116,7 @@ fun CreateNewListTile(
 private fun ListSelectionTileUnselectedPreview() {
     WistTheme {
         ListSelectionTile(
-            text = "Phones",
-            selected = false,
-            onSelectionChange = {},
-            modifier = Modifier.padding(
+            text = "Phones", selected = false, onSelectionChange = {}, modifier = Modifier.padding(
                 WistDimensions.SpacingSm
             )
         )
@@ -143,10 +128,7 @@ private fun ListSelectionTileUnselectedPreview() {
 private fun ListSelectionTileSelectedPreview() {
     WistTheme {
         ListSelectionTile(
-            text = "Phones",
-            selected = true,
-            onSelectionChange = {},
-            modifier = Modifier.padding(
+            text = "Phones", selected = true, onSelectionChange = {}, modifier = Modifier.padding(
                 WistDimensions.SpacingSm
             )
         )
@@ -158,8 +140,7 @@ private fun ListSelectionTileSelectedPreview() {
 private fun CreateNewListTilePreview() {
     WistTheme {
         CreateNewListTile(
-            onClick = {},
-            modifier = Modifier.padding(
+            onClick = {}, modifier = Modifier.padding(
                 WistDimensions.SpacingSm
             )
         )
@@ -175,15 +156,13 @@ private fun ListSelectionRowPreview() {
         FlowRow(
             modifier = Modifier.padding(
                 WistDimensions.SpacingSm
-            ),
-            horizontalArrangement = Arrangement.spacedBy(WistDimensions.SpacingSm)
+            ), horizontalArrangement = Arrangement.spacedBy(WistDimensions.SpacingSm)
         ) {
             listOf("Phones", "My shoe list", "Shopping list 01").forEach { listName ->
                 ListSelectionTile(
                     text = listName,
                     selected = listName == selectedList,
-                    onSelectionChange = { if (it) selectedList = listName }
-                )
+                    onSelectionChange = { if (it) selectedList = listName })
             }
             CreateNewListTile(onClick = {})
         }
@@ -213,8 +192,7 @@ private fun ListSelectionMultiplePreview() {
                         } else {
                             selectedLists - listName
                         }
-                    }
-                )
+                    })
             }
             CreateNewListTile(onClick = {})
         }

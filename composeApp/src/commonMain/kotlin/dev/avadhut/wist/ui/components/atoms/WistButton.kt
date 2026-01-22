@@ -30,8 +30,10 @@ import dev.avadhut.wist.ui.theme.WistTheme
 enum class WistButtonStyle {
     /** Solid white background with black text - for primary actions */
     PRIMARY,
+
     /** Outlined with transparent background - for secondary actions */
     SECONDARY,
+
     /** Grey background (surface color) - for less prominent actions */
     TERTIARY
 }
@@ -60,8 +62,7 @@ fun WistButton(
     enabled: Boolean = true,
     fillMaxWidth: Boolean = false
 ) {
-    val buttonModifier = modifier
-        .height(WistDimensions.ButtonHeight)
+    val buttonModifier = modifier.height(WistDimensions.ButtonHeight)
         .then(if (fillMaxWidth) Modifier.fillMaxWidth() else Modifier)
 
     when (style) {
@@ -83,8 +84,7 @@ fun WistButton(
                 )
             ) {
                 Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge
+                    text = text, style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -110,8 +110,7 @@ fun WistButton(
                 )
             ) {
                 Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge
+                    text = text, style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -134,8 +133,7 @@ fun WistButton(
                 )
             ) {
                 Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge
+                    text = text, style = MaterialTheme.typography.labelLarge
                 )
             }
         }
@@ -151,9 +149,7 @@ fun WistButton(
 private fun WistButtonPrimaryPreview() {
     WistTheme {
         WistButton(
-            text = "Confirm",
-            onClick = {},
-            style = WistButtonStyle.PRIMARY
+            text = "Confirm", onClick = {}, style = WistButtonStyle.PRIMARY
         )
     }
 }
@@ -163,9 +159,7 @@ private fun WistButtonPrimaryPreview() {
 private fun WistButtonSecondaryPreview() {
     WistTheme {
         WistButton(
-            text = "Create New list",
-            onClick = {},
-            style = WistButtonStyle.SECONDARY
+            text = "Create New list", onClick = {}, style = WistButtonStyle.SECONDARY
         )
     }
 }
@@ -175,9 +169,7 @@ private fun WistButtonSecondaryPreview() {
 private fun WistButtonTertiaryPreview() {
     WistTheme {
         WistButton(
-            text = "Add product",
-            onClick = {},
-            style = WistButtonStyle.TERTIARY
+            text = "Add product", onClick = {}, style = WistButtonStyle.TERTIARY
         )
     }
 }
@@ -187,10 +179,7 @@ private fun WistButtonTertiaryPreview() {
 private fun WistButtonDisabledPreview() {
     WistTheme {
         WistButton(
-            text = "Disabled",
-            onClick = {},
-            style = WistButtonStyle.PRIMARY,
-            enabled = false
+            text = "Disabled", onClick = {}, style = WistButtonStyle.PRIMARY, enabled = false
         )
     }
 }
@@ -222,10 +211,7 @@ private fun WistButtonRowPreview() {
 private fun WistButtonFullWidthPreview() {
     WistTheme {
         WistButton(
-            text = "Confirm",
-            onClick = {},
-            style = WistButtonStyle.PRIMARY,
-            fillMaxWidth = true
+            text = "Confirm", onClick = {}, style = WistButtonStyle.PRIMARY, fillMaxWidth = true
         )
     }
 }

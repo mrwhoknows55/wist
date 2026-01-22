@@ -40,13 +40,13 @@ fun BottomActionArea(
     onSecondaryClick: () -> Unit,
     modifier: Modifier = Modifier,
     primaryEnabled: Boolean = true,
-    secondaryEnabled: Boolean = true
+    secondaryEnabled: Boolean = true,
+    showSecondary: Boolean = true,
+    primaryButtonStyle: WistButtonStyle = WistButtonStyle.TERTIARY,
+    secondaryButtonStyle: WistButtonStyle = WistButtonStyle.SECONDARY
 ) {
     Row(
-        modifier = modifier
-            .navigationBarsPadding()
-            .fillMaxWidth()
-            .background(BackgroundPrimary)
+        modifier = modifier.navigationBarsPadding().fillMaxWidth().background(BackgroundPrimary)
             .padding(WistDimensions.BottomActionAreaPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -54,21 +54,27 @@ fun BottomActionArea(
         WistButton(
             text = primaryText,
             onClick = onPrimaryClick,
-            style = WistButtonStyle.TERTIARY,
+            style = primaryButtonStyle,
             enabled = primaryEnabled,
             modifier = Modifier.weight(1f)
         )
 
-        Spacer(modifier = Modifier.width(
-            WistDimensions.SpacingSm))
+        if (showSecondary) {
 
-        WistButton(
-            text = secondaryText,
-            onClick = onSecondaryClick,
-            style = WistButtonStyle.SECONDARY,
-            enabled = secondaryEnabled,
-            modifier = Modifier.weight(1f)
-        )
+            Spacer(
+                modifier = Modifier.width(
+                    WistDimensions.SpacingSm
+                )
+            )
+
+            WistButton(
+                text = secondaryText,
+                onClick = onSecondaryClick,
+                style = secondaryButtonStyle,
+                enabled = secondaryEnabled,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
@@ -92,9 +98,7 @@ fun SingleActionBottomArea(
     style: WistButtonStyle = WistButtonStyle.SECONDARY
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(BackgroundPrimary)
+        modifier = modifier.fillMaxWidth().background(BackgroundPrimary)
             .padding(WistDimensions.BottomActionAreaPadding),
         horizontalArrangement = Arrangement.Center
     ) {
@@ -148,9 +152,7 @@ private fun SingleActionBottomAreaPreview() {
 private fun SingleActionBottomAreaPrimaryPreview() {
     WistTheme {
         SingleActionBottomArea(
-            text = "Confirm",
-            onClick = {},
-            style = WistButtonStyle.PRIMARY
+            text = "Confirm", onClick = {}, style = WistButtonStyle.PRIMARY
         )
     }
 }

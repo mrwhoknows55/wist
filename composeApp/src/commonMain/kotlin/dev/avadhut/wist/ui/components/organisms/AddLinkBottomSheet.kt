@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,8 +49,6 @@ import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
 import dev.avadhut.wist.ui.theme.WistDimensions
 import dev.avadhut.wist.ui.theme.WistTheme
-import kotlin.collections.minus
-import kotlin.collections.plus
 
 /**
  * Data class for clipboard suggestions
@@ -142,7 +141,7 @@ fun AddLinkBottomSheetContent(
                 modifier = Modifier
                     .width(2.dp)
                     .height(WistDimensions.InputHeight)
-                    .background(BorderDefault)
+                    .background(Color.White)
             )
 
             Spacer(modifier = Modifier.width(
