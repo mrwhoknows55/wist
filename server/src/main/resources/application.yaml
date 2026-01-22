@@ -8,3 +8,9 @@ ktor:
 firecrawl:
   apiKey: ${?FIRECRAWL_API_KEY}
   baseUrl: "https://api.firecrawl.dev"
+
+db:
+  driver: "org.postgresql.Driver"
+  url: ${?DB_URL}
+  user: ${?DB_USER}
+  password: ${?DB_PASSWORD}

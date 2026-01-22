@@ -2,6 +2,7 @@ package dev.avadhut.wist
 
 import dev.avadhut.wist.core.dto.ScrapeRequest
 import dev.avadhut.wist.core.dto.ScrapeResponse
+import dev.avadhut.wist.database.DatabaseFactory
 import dev.avadhut.wist.service.FirecrawlException
 import dev.avadhut.wist.service.FirecrawlService
 import io.ktor.http.*
@@ -27,6 +28,9 @@ fun Application.module() {
         })
     }
 
+    // Initialize Database
+    DatabaseFactory.init(environment.config)
+
     // Load Firecrawl configuration
     val firecrawlApiKey = environment.config.propertyOrNull("firecrawl.apiKey")?.getString()
         ?: throw IllegalStateException("FIRECRAWL_API_KEY environment variable is required")
@@ -36,13 +40,19 @@ fun Application.module() {
     val firecrawlService = FirecrawlService(firecrawlApiKey, firecrawlBaseUrl)
 
     routing {
-        // Health check
         get("/") {
-            call.respondText("Wist API Server - v1.0.0")
+            call.respondText("Wist API Server - v0.1.0")
         }
 
         get("/health") {
-            call.respond(mapOf("status" to "ok"))
+            val dbHealthy = DatabaseFactory.isHealthy()
+            val status = if (dbHealthy) HttpStatusCode.OK else HttpStatusCode.ServiceUnavailable
+            call.respond(
+                status, mapOf(
+                    "status" to if (dbHealthy) "ok" else "error",
+                    "database" to if (dbHealthy) "connected" else "disconnected"
+                )
+            )
         }
 
         // Scrape endpoint
@@ -61,7 +71,7 @@ fun Application.module() {
                 // Validate URL format
                 try {
                     Url(request.url)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     call.respond(
                         HttpStatusCode.BadRequest,
                         ScrapeResponse(success = false, error = "Invalid URL format")
