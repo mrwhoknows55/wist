@@ -51,8 +51,8 @@ import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheet
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheetContent
 import dev.avadhut.wist.ui.components.organisms.BottomActionArea
 import dev.avadhut.wist.ui.components.organisms.ClipboardItem
-import dev.avadhut.wist.ui.components.organisms.WishlistCard
 import dev.avadhut.wist.ui.components.organisms.WishlistDisplayData
+import dev.avadhut.wist.ui.components.organisms.WishlistListItem
 import dev.avadhut.wist.ui.components.organisms.WistHomeTopAppBar
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
@@ -62,8 +62,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistListScreen(
-    apiClient: WistApiClient,
-    onWishlistClick: (Int) -> Unit
+    apiClient: WistApiClient, onWishlistClick: (Int) -> Unit
 ) {
     var wishlists by remember { mutableStateOf<List<WishlistDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -82,14 +81,12 @@ fun WishlistListScreen(
     fun loadWishlists() {
         scope.launch {
             isLoading = true
-            apiClient.wishlists.getAllWishlists()
-                .onSuccess {
-                    wishlists = it
-                    error = null
-                }
-                .onFailure {
-                    error = it.message ?: "Failed to load wishlists"
-                }
+            apiClient.wishlists.getAllWishlists().onSuccess {
+                wishlists = it
+                error = null
+            }.onFailure {
+                error = it.message ?: "Failed to load wishlists"
+            }
             isLoading = false
         }
     }
@@ -109,22 +106,19 @@ fun WishlistListScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            // Using Box to overlay title or custom AppBar
-            WistHomeTopAppBar() // Defaults to "Wist" logo, assuming it's okay or will be updated globally
-        },
-        bottomBar = {
-            BottomActionArea(
-                primaryText = "Add product",
-                secondaryText = "Create New list",
-                onPrimaryClick = { showAddSheet = true },
-                onSecondaryClick = { showCreateDialog = true },
-                primaryButtonStyle = WistButtonStyle.PRIMARY,
-                secondaryButtonStyle = WistButtonStyle.SECONDARY
-            )
-        }
-    ) { padding ->
+    Scaffold(topBar = {
+        // Using Box to overlay title or custom AppBar
+        WistHomeTopAppBar() // Defaults to "Wist" logo, assuming it's okay or will be updated globally
+    }, bottomBar = {
+        BottomActionArea(
+            primaryText = "Add product",
+            secondaryText = "Create New list",
+            onPrimaryClick = { showAddSheet = true },
+            onSecondaryClick = { showCreateDialog = true },
+            primaryButtonStyle = WistButtonStyle.PRIMARY,
+            secondaryButtonStyle = WistButtonStyle.SECONDARY
+        )
+    }) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -132,16 +126,14 @@ fun WishlistListScreen(
                 Text("Error: $error", modifier = Modifier.align(Alignment.Center))
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(WistDimensions.ScreenPaddingHorizontal),
-                    verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingLg),
+                    contentPadding = PaddingValues(horizontal = WistDimensions.ScreenPaddingHorizontal),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     item {
                         SearchInput(
                             value = searchText,
                             onValueChange = { searchText = it },
-                            onFilterClick = {}
-                        )
+                            onFilterClick = {})
                         Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                     }
 
@@ -157,22 +149,45 @@ fun WishlistListScreen(
                     } else {
                         items(wishlists.filter {
                             it.name.contains(
-                                searchText,
-                                ignoreCase = true
+                                searchText, ignoreCase = true
                             )
                         }) { wishlist ->
-                            WishlistCard(
+                            // Format date as "from Jan 22" style
+                            val dateLabel =
+                                wishlist.createdAt.toString().substringBefore("T").let { isoDate ->
+                                    try {
+                                        val parts = isoDate.split("-")
+                                        val month = when (parts.getOrNull(1)) {
+                                            "01" -> "Jan"
+                                            "02" -> "Feb"
+                                            "03" -> "Mar"
+                                            "04" -> "Apr"
+                                            "05" -> "May"
+                                            "06" -> "Jun"
+                                            "07" -> "Jul"
+                                            "08" -> "Aug"
+                                            "09" -> "Sep"
+                                            "10" -> "Oct"
+                                            "11" -> "Nov"
+                                            "12" -> "Dec"
+                                            else -> "Jan"
+                                        }
+                                        val day = parts.getOrNull(2)?.toIntOrNull() ?: 1
+                                        "from $month $day"
+                                    } catch (_: Exception) {
+                                        isoDate
+                                    }
+                                }
+                            WishlistListItem(
                                 data = WishlistDisplayData(
                                     id = wishlist.id.toString(),
                                     name = wishlist.name,
-                                    dateLabel = wishlist.createdAt.toString().substringBefore("T"),
+                                    dateLabel = dateLabel,
                                     productImages = emptyList(),
                                     sources = emptyList(),
                                     priceMin = 0.0,
                                     priceMax = 0.0
-                                ),
-                                onClick = { onWishlistClick(wishlist.id) }
-                            )
+                                ), onClick = { onWishlistClick(wishlist.id) })
                         }
                     }
 
@@ -186,24 +201,18 @@ fun WishlistListScreen(
     }
 
     if (showCreateDialog) {
-        CreateWishlistDialog(
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { name ->
-                scope.launch {
-                    apiClient.wishlists.createWishlist(name)
-                        .onSuccess {
-                            loadWishlists()
-                            showCreateDialog = false
-                        }
+        CreateWishlistDialog(onDismiss = { showCreateDialog = false }, onConfirm = { name ->
+            scope.launch {
+                apiClient.wishlists.createWishlist(name).onSuccess {
+                    loadWishlists()
+                    showCreateDialog = false
                 }
             }
-        )
+        })
     }
 
     AddLinkBottomSheet(
-        isVisible = showAddSheet,
-        onDismiss = { showAddSheet = false },
-        sheetState = sheetState
+        isVisible = showAddSheet, onDismiss = { showAddSheet = false }, sheetState = sheetState
     ) {
         AddLinkBottomSheetContent(
             urlValue = urlToAdd,
@@ -230,8 +239,7 @@ fun WishlistListScreen(
                     // update list if needed or just notify
                 }
             },
-            onClose = { showAddSheet = false }
-        )
+            onClose = { showAddSheet = false })
     }
 }
 
@@ -239,24 +247,17 @@ fun WishlistListScreen(
 @Composable
 fun SecondOpinionCard() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(WistDimensions.CardRadius))
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(Color(0xFF1E1E1E), Color(0xFF121212))
-                )
+        modifier = Modifier.padding(2.dp).fillMaxWidth().background(
+            brush = Brush.horizontalGradient(
+                colors = listOf(Color(0xFF1E1E1E), Color(0xFF121212))
             )
-            .height(140.dp)
+        ).height(140.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize()
         ) {
             Column(
-                modifier = Modifier
-                    .weight(0.6f)
-                    .padding(WistDimensions.CardPadding)
-                    .fillMaxSize(),
+                modifier = Modifier.weight(0.6f).padding(WistDimensions.CardPadding).fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -272,9 +273,7 @@ fun SecondOpinionCard() {
 
                 // Small Get Started Button
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Transparent)
+                    modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(Color.Transparent)
                         .border(1.dp, Color.White, RoundedCornerShape(4.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
@@ -288,14 +287,11 @@ fun SecondOpinionCard() {
             }
             // Placeholder for gradient/image
             Box(
-                modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(Color(0xFF333333), Color.Transparent)
-                        )
+                modifier = Modifier.weight(0.4f).fillMaxSize().background(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFF333333), Color.Transparent)
                     )
+                )
             )
         }
     }
@@ -304,16 +300,12 @@ fun SecondOpinionCard() {
 @Composable
 fun FirstWishlistCard(onCreateClick: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(WistDimensions.CardRadius))
-            .background(Color.Black)
-            .border(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(WistDimensions.CardRadius))
+            .background(Color.Black).border(
                 1.dp,
                 dev.avadhut.wist.ui.theme.BorderDefault,
                 RoundedCornerShape(WistDimensions.CardRadius)
-            )
-            .height(160.dp)
+            ).height(160.dp)
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -343,8 +335,7 @@ fun FirstWishlistCard(onCreateClick: () -> Unit) {
 
             // Icons pile logic (visual placeholder)
             Box(
-                modifier = Modifier.weight(0.5f).fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier.weight(0.5f).fillMaxSize(), contentAlignment = Alignment.Center
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy((-10).dp)) {
                     // Fake icons
@@ -360,26 +351,20 @@ fun FirstWishlistCard(onCreateClick: () -> Unit) {
 @Composable
 fun CreateWishlistDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("New Wishlist") },
-        text = {
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name") },
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name) }) {
-                Text("Create")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("New Wishlist") }, text = {
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            singleLine = true
+        )
+    }, confirmButton = {
+        Button(onClick = { onConfirm(name) }) {
+            Text("Create")
         }
-    )
+    }, dismissButton = {
+        TextButton(onClick = onDismiss) {
+            Text("Cancel")
+        }
+    })
 }

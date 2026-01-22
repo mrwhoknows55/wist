@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -21,7 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.tooling.preview.Preview
 import dev.avadhut.wist.ui.theme.BackgroundSurface
@@ -58,8 +57,7 @@ fun SearchInput(
         modifier = modifier
             .fillMaxWidth()
             .height(WistDimensions.InputHeight)
-            .clip(RoundedCornerShape(WistDimensions.InputRadius))
-            .background(BackgroundSurface)
+            .background(BackgroundSurface, RectangleShape)
             .padding(horizontal = WistDimensions.SpacingLg),
         verticalAlignment = Alignment.CenterVertically
     ) {

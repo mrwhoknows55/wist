@@ -1,6 +1,7 @@
 package dev.avadhut.wist.ui.components.organisms
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,13 +13,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.ui.components.atoms.KnownSource
@@ -61,18 +61,11 @@ data class WishlistDisplayData(
  */
 @Composable
 fun WishlistCard(
-    data: WishlistDisplayData,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    data: WishlistDisplayData, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(WistDimensions.CardRadius))
-            .background(BackgroundCard)
-            .clickable(onClick = onClick)
-            .padding(WistDimensions.SpacingLg),
-        verticalAlignment = Alignment.Top
+        modifier = modifier.fillMaxWidth().background(BackgroundCard).clickable(onClick = onClick)
+            .padding(WistDimensions.SpacingLg), verticalAlignment = Alignment.Top
     ) {
         // Left side: Info
         Column(
@@ -92,8 +85,11 @@ fun WishlistCard(
                 color = TextSecondary
             )
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
+            Spacer(
+                modifier = Modifier.height(
+                    WistDimensions.SpacingLg
+                )
+            )
 
             // Source icons row
             Row(
@@ -101,31 +97,116 @@ fun WishlistCard(
             ) {
                 data.sources.take(4).forEach { source ->
                     SourceIcon(
-                        source = source,
-                        size = WistDimensions.SourceIconSize
+                        source = source, size = WistDimensions.SourceIconSize
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingSm))
+            Spacer(
+                modifier = Modifier.height(
+                    WistDimensions.SpacingSm
+                )
+            )
 
             // Price range
             PriceRangeTag(
-                minPrice = data.priceMin,
-                maxPrice = data.priceMax,
-                currencyCode = data.currencyCode
+                minPrice = data.priceMin, maxPrice = data.priceMax, currencyCode = data.currencyCode
             )
         }
 
-        Spacer(modifier = Modifier.width(
-            WistDimensions.SpacingMd))
+        Spacer(
+            modifier = Modifier.width(
+                WistDimensions.SpacingMd
+            )
+        )
 
         // Right side: Thumbnail grid
         ProductThumbnailGrid(
-            imageUrls = data.productImages,
-            modifier = Modifier.size(120.dp)
+            imageUrls = data.productImages, modifier = Modifier.size(120.dp)
         )
+    }
+}
+
+/**
+ * Wishlist List Item - Grid/Table style layout with borders
+ *
+ * Used for the main wishlist list screen with continuous grid appearance.
+ * Features:
+ * - Rectangular shape (no rounded corners)
+ * - Border on all sides
+ * - Optional bottom divider between items
+ *
+ * @param data Wishlist display data
+ * @param onClick Click handler for the item
+ * @param modifier Modifier for customization
+ * @param showDivider Whether to show bottom divider (default true)
+ */
+@Composable
+fun WishlistListItem(
+    data: WishlistDisplayData,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true
+) {
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(2.dp).border(
+                width = WistDimensions.DividerThickness,
+                color = BorderDefault,
+                shape = RectangleShape
+            ).clickable(onClick = onClick).padding(WistDimensions.SpacingLg),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // Left side: Info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                // List name
+                Text(
+                    text = data.name,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = TextPrimary
+                )
+
+                // Date
+                Text(
+                    text = data.dateLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+
+                // Source icons row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXxs)
+                ) {
+                    data.sources.take(4).forEach { source ->
+                        SourceIcon(
+                            source = source, size = WistDimensions.SourceIconSize
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
+
+                // Price range
+                PriceRangeTag(
+                    minPrice = data.priceMin,
+                    maxPrice = data.priceMax,
+                    currencyCode = data.currencyCode
+                )
+            }
+
+            Spacer(modifier = Modifier.width(WistDimensions.SpacingMd))
+
+            // Right side: Thumbnail grid
+            ProductThumbnailGrid(
+                imageUrls = data.productImages, modifier = Modifier.size(120.dp)
+            )
+        }
     }
 }
 
@@ -134,29 +215,19 @@ fun WishlistCard(
  */
 @Composable
 fun WishlistCardBordered(
-    data: WishlistDisplayData,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    data: WishlistDisplayData, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(WistDimensions.CardRadius))
-            .clickable(onClick = onClick)
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick)
     ) {
         // Left border accent
         Box(
-            modifier = Modifier
-                .width(2.dp)
-                .height(140.dp)
-                .background(BorderDefault)
+            modifier = Modifier.width(2.dp).height(140.dp).background(BorderDefault)
         )
 
         // Card content
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .padding(WistDimensions.SpacingLg),
+            modifier = Modifier.weight(1f).padding(WistDimensions.SpacingLg),
             verticalAlignment = Alignment.Top
         ) {
             // Left side: Info
@@ -175,22 +246,27 @@ fun WishlistCardBordered(
                     color = TextSecondary
                 )
 
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingLg))
+                Spacer(
+                    modifier = Modifier.height(
+                        WistDimensions.SpacingLg
+                    )
+                )
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXxs)
                 ) {
                     data.sources.take(4).forEach { source ->
                         SourceIcon(
-                            source = source,
-                            size = WistDimensions.SourceIconSize
+                            source = source, size = WistDimensions.SourceIconSize
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingSm))
+                Spacer(
+                    modifier = Modifier.height(
+                        WistDimensions.SpacingSm
+                    )
+                )
 
                 PriceRangeTag(
                     minPrice = data.priceMin,
@@ -199,12 +275,14 @@ fun WishlistCardBordered(
                 )
             }
 
-            Spacer(modifier = Modifier.width(
-                WistDimensions.SpacingMd))
+            Spacer(
+                modifier = Modifier.width(
+                    WistDimensions.SpacingMd
+                )
+            )
 
             ProductThumbnailGrid(
-                imageUrls = data.productImages,
-                modifier = Modifier.size(120.dp)
+                imageUrls = data.productImages, modifier = Modifier.size(120.dp)
             )
         }
     }
@@ -233,9 +311,7 @@ private fun WishlistCardPreview() {
                 priceMin = 122.0,
                 priceMax = 455.0,
                 currencyCode = "USD"
-            ),
-            onClick = {},
-            modifier = Modifier.padding(
+            ), onClick = {}, modifier = Modifier.padding(
                 WistDimensions.SpacingLg
             )
         )
@@ -253,15 +329,12 @@ private fun WishlistCardBorderedPreview() {
                 dateLabel = "from Apr 25",
                 productImages = listOf("img1", "img2"),
                 sources = listOf(
-                    KnownSource.AMAZON,
-                    KnownSource.FLIPKART
+                    KnownSource.AMAZON, KnownSource.FLIPKART
                 ),
                 priceMin = 82.0,
                 priceMax = 124.0,
                 currencyCode = "USD"
-            ),
-            onClick = {},
-            modifier = Modifier.padding(
+            ), onClick = {}, modifier = Modifier.padding(
                 WistDimensions.SpacingLg
             )
         )
@@ -275,8 +348,7 @@ private fun WishlistCardListPreview() {
         Column(
             modifier = Modifier.padding(
                 WistDimensions.SpacingLg
-            ),
-            verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingSm)
+            ), verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingSm)
         ) {
             listOf(
                 WishlistDisplayData(
@@ -292,24 +364,20 @@ private fun WishlistCardListPreview() {
                     ),
                     priceMin = 122.0,
                     priceMax = 455.0
-                ),
-                WishlistDisplayData(
+                ), WishlistDisplayData(
                     id = "2",
                     name = "My shoe list",
                     dateLabel = "from Apr 25",
                     productImages = listOf("img1", "img2"),
                     sources = listOf(
-                        KnownSource.AMAZON,
-                        KnownSource.FLIPKART
+                        KnownSource.AMAZON, KnownSource.FLIPKART
                     ),
                     priceMin = 82.0,
                     priceMax = 124.0
                 )
             ).forEach { wishlist ->
                 WishlistCardBordered(
-                    data = wishlist,
-                    onClick = {}
-                )
+                    data = wishlist, onClick = {})
             }
         }
     }

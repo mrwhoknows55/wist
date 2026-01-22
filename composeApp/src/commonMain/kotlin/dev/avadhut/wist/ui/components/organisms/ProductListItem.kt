@@ -1,6 +1,7 @@
 package dev.avadhut.wist.ui.components.organisms
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.PriceTag
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
 import dev.avadhut.wist.ui.theme.BackgroundCard
+import dev.avadhut.wist.ui.theme.BorderDefault
 import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.WistDimensions
@@ -62,18 +64,24 @@ data class ProductListItemData(
 fun ProductListItem(
     data: ProductListItemData,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(
-                horizontal = WistDimensions.ScreenPaddingHorizontal,
-                vertical = WistDimensions.SpacingSm
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = WistDimensions.DividerThickness,
+                    color = BorderDefault
+                )
+                .clickable(onClick = onClick)
+                .padding(
+                    horizontal = WistDimensions.ScreenPaddingHorizontal,
+                    vertical = WistDimensions.SpacingLg
+                ),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         // Product Image
         ProductListItemImage(
             imageUrl = data.imageUrl,
@@ -116,6 +124,7 @@ fun ProductListItem(
                 showLabel = true
             )
         }
+    }
     }
 }
 

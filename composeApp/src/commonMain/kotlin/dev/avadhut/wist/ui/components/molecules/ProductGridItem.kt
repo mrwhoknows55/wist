@@ -7,23 +7,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -59,11 +51,7 @@ fun ProductGridItem(
     }
 
     Box(
-        modifier = modifier
-            .size(size)
-            .clip(RoundedCornerShape(WistDimensions.SpacingXs))
-            .background(BackgroundCard)
-            .then(clickableModifier),
+        modifier = modifier.size(size).background(BackgroundCard).then(clickableModifier),
         contentAlignment = Alignment.Center
     ) {
         if (imageUrl != null) {
@@ -90,8 +78,7 @@ fun ProductImagePlaceholder(
     iconTint: Color = TextDisabled
 ) {
     Box(
-        modifier = modifier.background(backgroundColor),
-        contentAlignment = Alignment.Center
+        modifier = modifier.background(backgroundColor), contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Filled.Image,
@@ -112,14 +99,12 @@ fun ProductImagePlaceholder(
  */
 @Composable
 fun ProductThumbnailGrid(
-    imageUrls: List<String?>,
-    modifier: Modifier = Modifier
+    imageUrls: List<String?>, modifier: Modifier = Modifier
 ) {
     val displayItems = imageUrls.take(4) + List(maxOf(0, 4 - imageUrls.size)) { null }
 
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXxs)
+        modifier = modifier, verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXxs)
     ) {
         // Row 1
         androidx.compose.foundation.layout.Row(
@@ -163,9 +148,7 @@ fun ProductThumbnailGrid(
 private fun ProductGridItemPreview() {
     WistTheme {
         ProductGridItem(
-            imageUrl = null,
-            contentDescription = "iPhone 15",
-            modifier = Modifier.padding(
+            imageUrl = null, contentDescription = "iPhone 15", modifier = Modifier.padding(
                 WistDimensions.SpacingSm
             )
         )
@@ -208,14 +191,8 @@ private fun ProductThumbnailGridPreview() {
     WistTheme {
         ProductThumbnailGrid(
             imageUrls = listOf(
-                "image1.jpg",
-                "image2.jpg",
-                "image3.jpg",
-                "image4.jpg"
-            ),
-            modifier = Modifier
-                .padding(WistDimensions.SpacingSm)
-                .size(120.dp)
+                "image1.jpg", "image2.jpg", "image3.jpg", "image4.jpg"
+            ), modifier = Modifier.padding(WistDimensions.SpacingSm).size(120.dp)
         )
     }
 }
@@ -226,9 +203,7 @@ private fun ProductThumbnailGridPartialPreview() {
     WistTheme {
         ProductThumbnailGrid(
             imageUrls = listOf("image1.jpg", "image2.jpg"),
-            modifier = Modifier
-                .padding(WistDimensions.SpacingSm)
-                .size(120.dp)
+            modifier = Modifier.padding(WistDimensions.SpacingSm).size(120.dp)
         )
     }
 }

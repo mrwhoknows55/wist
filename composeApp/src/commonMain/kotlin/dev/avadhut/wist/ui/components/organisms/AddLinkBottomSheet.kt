@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -19,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -35,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
 import dev.avadhut.wist.ui.components.atoms.WistIconButton
@@ -43,7 +43,6 @@ import dev.avadhut.wist.ui.components.molecules.CreateNewListTile
 import dev.avadhut.wist.ui.components.molecules.ListSelectionTile
 import dev.avadhut.wist.ui.theme.BackgroundCard
 import dev.avadhut.wist.ui.theme.BackgroundSurface
-import dev.avadhut.wist.ui.theme.BorderDefault
 import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
@@ -95,9 +94,7 @@ fun AddLinkBottomSheetContent(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(BackgroundSurface)
+        modifier = modifier.fillMaxWidth().background(BackgroundSurface)
             .padding(WistDimensions.ScreenPaddingHorizontal)
     ) {
         // Header: Title + Close button
@@ -112,48 +109,47 @@ fun AddLinkBottomSheetContent(
                 color = TextPrimary
             )
             WistIconButton(
-                icon = Icons.Filled.Close,
-                contentDescription = "Close",
-                onClick = onClose
+                icon = Icons.Filled.Close, contentDescription = "Close", onClick = onClose
             )
         }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingLg))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingLg
+            )
+        )
 
         // ADD Section
         Text(
-            text = "ADD",
-            style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary
+            text = "ADD", style = MaterialTheme.typography.labelMedium, color = TextSecondary
         )
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingSm))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingSm
+            )
+        )
 
         // URL Input with left border accent
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
         ) {
             // Left accent border
             Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .height(WistDimensions.InputHeight)
+                modifier = Modifier.width(2.dp).height(WistDimensions.InputHeight)
                     .background(Color.White)
             )
 
-            Spacer(modifier = Modifier.width(
-                WistDimensions.SpacingSm))
+            Spacer(
+                modifier = Modifier.width(
+                    WistDimensions.SpacingSm
+                )
+            )
 
             // Text Input
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(WistDimensions.InputHeight)
-                    .clip(RoundedCornerShape(WistDimensions.InputRadius))
-                    .background(BackgroundCard)
+                modifier = Modifier.weight(1f).height(WistDimensions.InputHeight)
+                    .clip(RoundedCornerShape(WistDimensions.InputRadius)).background(BackgroundCard)
                     .padding(horizontal = WistDimensions.SpacingLg),
                 contentAlignment = Alignment.CenterStart
             ) {
@@ -175,15 +171,17 @@ fun AddLinkBottomSheetContent(
                             )
                         }
                         innerTextField()
-                    }
-                )
+                    })
             }
         }
 
         // Clipboard Section
         if (clipboardItems.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingMd))
+            Spacer(
+                modifier = Modifier.height(
+                    WistDimensions.SpacingMd
+                )
+            )
 
             Text(
                 text = "Clipboard",
@@ -191,33 +189,38 @@ fun AddLinkBottomSheetContent(
                 color = TextSecondary
             )
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingSm))
+            Spacer(
+                modifier = Modifier.height(
+                    WistDimensions.SpacingSm
+                )
+            )
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(WistDimensions.SpacingSm)
             ) {
                 clipboardItems.take(2).forEach { item ->
                     ClipboardSuggestionChip(
-                        url = item.url,
-                        onClick = { onClipboardItemClick(item) }
-                    )
+                        url = item.url, onClick = { onClipboardItemClick(item) })
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingLg))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingLg
+            )
+        )
 
         // TO Section
         Text(
-            text = "TO",
-            style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary
+            text = "TO", style = MaterialTheme.typography.labelMedium, color = TextSecondary
         )
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingSm))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingSm
+            )
+        )
 
         // List Selection Tiles
         FlowRow(
@@ -230,14 +233,16 @@ fun AddLinkBottomSheetContent(
                     selected = listName in selectedLists,
                     onSelectionChange = { selected ->
                         onListSelectionChange(listName, selected)
-                    }
-                )
+                    })
             }
             CreateNewListTile(onClick = onCreateNewList)
         }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingXl))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingXl
+            )
+        )
 
         // Confirm Button
         WistButton(
@@ -247,19 +252,55 @@ fun AddLinkBottomSheetContent(
             fillMaxWidth = true
         )
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingLg))
+        Spacer(
+            modifier = Modifier.height(
+                WistDimensions.SpacingLg
+            )
+        )
     }
 }
 
 /**
- * Add Link Modal Bottom Sheet
+ * Add Product Dialog - Centered modal dialog for adding items
  *
- * Full modal bottom sheet wrapper for the add link flow.
+ * Replaces the bottom sheet pattern with a centered dialog per Figma design.
+ *
+ * @param isVisible Whether the dialog is visible
+ * @param onDismiss Callback when dialog is dismissed
+ * @param content The dialog content
+ */
+@Composable
+fun AddProductDialog(
+    isVisible: Boolean, onDismiss: () -> Unit, content: @Composable () -> Unit
+) {
+    if (isVisible) {
+        Dialog(
+            onDismissRequest = onDismiss, properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxWidth(0.92f)
+                    .clip(RoundedCornerShape(WistDimensions.CardRadiusLarge))
+                    .background(BackgroundSurface)
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * Add Link Modal Bottom Sheet (Legacy - now wraps Dialog)
+ *
+ * @deprecated Use AddProductDialog instead for centered dialog pattern.
+ * This function now internally uses Dialog but maintains the same API for backward compatibility.
  *
  * @param isVisible Whether the sheet is visible
  * @param onDismiss Callback when sheet is dismissed
- * @param sheetState Optional sheet state for controlling the sheet
+ * @param sheetState Optional sheet state (no longer used but kept for API compatibility)
  * @param content The sheet content
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -267,35 +308,13 @@ fun AddLinkBottomSheetContent(
 fun AddLinkBottomSheet(
     isVisible: Boolean,
     onDismiss: () -> Unit,
-    sheetState: SheetState = rememberModalBottomSheetState(),
+    @Suppress("UNUSED_PARAMETER") sheetState: SheetState = rememberModalBottomSheetState(),
     content: @Composable () -> Unit
 ) {
-    if (isVisible) {
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = sheetState,
-            containerColor = BackgroundSurface,
-            shape = RoundedCornerShape(
-                topStart = WistDimensions.BottomSheetRadius,
-                topEnd = WistDimensions.BottomSheetRadius
-            ),
-            dragHandle = {
-                // Custom drag handle
-                Box(
-                    modifier = Modifier
-                        .padding(vertical = WistDimensions.SpacingSm)
-                        .size(
-                            width = WistDimensions.BottomSheetHandleWidth,
-                            height = WistDimensions.BottomSheetHandleHeight
-                        )
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(BorderDefault)
-                )
-            }
-        ) {
-            content()
-        }
-    }
+    // Delegating to the new Dialog-based implementation
+    AddProductDialog(
+        isVisible = isVisible, onDismiss = onDismiss, content = content
+    )
 }
 
 
@@ -324,8 +343,7 @@ private fun AddLinkBottomSheetContentPreview() {
             },
             onCreateNewList = {},
             onConfirm = {},
-            onClose = {}
-        )
+            onClose = {})
     }
 }
 
@@ -343,8 +361,7 @@ private fun AddLinkBottomSheetContentEmptyPreview() {
             onListSelectionChange = { _, _ -> },
             onCreateNewList = {},
             onConfirm = {},
-            onClose = {}
-        )
+            onClose = {})
     }
 }
 
@@ -364,7 +381,6 @@ private fun AddLinkBottomSheetContentWithUrlPreview() {
             onListSelectionChange = { _, _ -> },
             onCreateNewList = {},
             onConfirm = {},
-            onClose = {}
-        )
+            onClose = {})
     }
 }
