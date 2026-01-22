@@ -1,4 +1,7 @@
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import com.android.build.api.dsl.androidLibrary
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -9,7 +12,11 @@ plugins {
 group = "dev.avadhut.wist"
 
 kotlin {
-    jvm()
+    jvm {
+        mainRun {
+            mainClass.set("dev.avadhut.wist.client.MainKt")
+        }
+    }
     androidLibrary {
         namespace = "dev.avadhut.wist.client"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -27,6 +34,7 @@ kotlin {
             // Ktor Client
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
 

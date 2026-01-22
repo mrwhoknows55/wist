@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.ktor.server.config.ApplicationConfig
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
 
@@ -13,7 +14,8 @@ object DatabaseFactory {
 
     fun init(config: ApplicationConfig) {
         val driverClassName = config.property("db.driver").getString()
-        val jdbcUrl = config.propertyOrNull("db.url")?.getString() ?: "jdbc:postgresql://localhost:5432/"
+        val jdbcUrl =
+            config.propertyOrNull("db.url")?.getString() ?: "jdbc:postgresql://localhost:5432/"
         val username = config.propertyOrNull("db.user")?.getString() ?: "postgres"
         val password = config.propertyOrNull("db.password")?.getString() ?: "postgres"
 
@@ -29,6 +31,12 @@ object DatabaseFactory {
 
         dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource!!)
+
+        // Create schema
+        transaction {
+            SchemaUtils.create(Wishlists, WishlistItems)
+        }
+        logger.info("Database initialized and schema created")
     }
 
     fun isHealthy(): Boolean {
