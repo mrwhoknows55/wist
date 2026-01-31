@@ -10,7 +10,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   app:
-    image: ghcr.io/mrwhoknows55/wist:latest
+    image: ghcr.io/mrwhoknows55/wist:${IMAGE_TAG:-latest}
     restart: always
     depends_on:
       - db
