@@ -38,10 +38,7 @@ jobs:
           # Use git short SHA for version
           VERSION=$(git rev-parse --short HEAD)
 
-          TAGS="${IMAGE}:${VERSION}"
-          TAGS="${TAGS},${IMAGE}:latest"
-
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "tags=${IMAGE}:${VERSION}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Build and push
@@ -82,4 +79,6 @@ jobs:
           ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" \
             "cd $DEPLOY_PATH && \
             export IMAGE_TAG=$IMAGE_TAG && \
+            export GHCR_USERNAME=$GHCR_USERNAME && \
+            export GHCR_TOKEN=$GHCR_TOKEN && \
             bash deploy.sh"

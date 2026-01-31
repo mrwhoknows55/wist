@@ -5,7 +5,9 @@ echo "Starting deployment..."
 
 # Load environment variables if .env exists
 if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | xargs)
+  set -a
+  source .env
+  set +a
 fi
 
 # Docker image from GitHub Actions
@@ -27,8 +29,8 @@ export IMAGE_TAG="$IMAGE_TAG"
 
 # Restart services
 echo "Restarting services..."
-docker-compose down
-docker-compose up -d
+docker compose down
+docker compose up -d
 
 echo "Deployment complete!"
 
