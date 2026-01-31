@@ -1,0 +1,1 @@
+/Users/whoknows/Developement/Projects/KMP/wist/AGENTS.md
