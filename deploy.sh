@@ -9,7 +9,7 @@ if [ -f .env ]; then
 fi
 
 # Docker image from GitHub Actions
-IMAGE_REPO="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+IMAGE_REPO="ghcr.io/mrwhoknows55/wist"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
 
