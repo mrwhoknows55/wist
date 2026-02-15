@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class WishlistDto(
     val id: Int,
+    val userId: Int,
     val name: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,

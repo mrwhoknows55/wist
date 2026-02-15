@@ -17,6 +17,7 @@ import org.jetbrains.exposed.v1.jdbc.update
 @Serializable
 data class Wishlist(
     val id: Int,
+    val userId: Int,
     val name: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
@@ -26,10 +27,11 @@ data class Wishlist(
 object WishlistRepository {
 
     /**
-     * Get all non-deleted wishlists
+     * Get all non-deleted wishlists for a user
      */
-    fun getAllWishlists(): List<Wishlist> = transaction {
-        Wishlists.selectAll().where { Wishlists.deletedAt.isNull() }
+    fun getAllWishlists(userId: Int): List<Wishlist> = transaction {
+        Wishlists.selectAll()
+            .where { (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull() }
             .orderBy(Wishlists.createdAt to SortOrder.DESC).map { it.toWishlist() }
     }
 
@@ -42,34 +44,38 @@ object WishlistRepository {
 
 
     /**
-     * Get a non-deleted wishlist by ID
+     * Get a non-deleted wishlist by ID for a specific user
      */
-    fun getActiveWishlistById(id: Int): Wishlist? = transaction {
-        Wishlists.selectAll().where { (Wishlists.id eq id) and Wishlists.deletedAt.isNull() }
-            .map { it.toWishlist() }.singleOrNull()
+    fun getActiveWishlistById(id: Int, userId: Int): Wishlist? = transaction {
+        Wishlists.selectAll().where {
+            (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
+        }.map { it.toWishlist() }.singleOrNull()
     }
 
     /**
-     * Create a new wishlist
+     * Create a new wishlist for a user
      */
-    fun createWishlist(name: String): Wishlist = transaction {
+    fun createWishlist(name: String, userId: Int): Wishlist = transaction {
         val now = currentLocalDateTime()
         val id = Wishlists.insert {
+            it[Wishlists.userId] = userId
             it[Wishlists.name] = name
             it[createdAt] = now
             it[updatedAt] = now
         }[Wishlists.id]
 
         Wishlist(
-            id = id, name = name, createdAt = now, updatedAt = now
+            id = id, userId = userId, name = name, createdAt = now, updatedAt = now
         )
     }
 
     /**
-     * Update wishlist name
+     * Update wishlist name (only if user owns it)
      */
-    fun updateWishlist(id: Int, name: String): Boolean = transaction {
-        val updated = Wishlists.update({ (Wishlists.id eq id) and Wishlists.deletedAt.isNull() }) {
+    fun updateWishlist(id: Int, name: String, userId: Int): Boolean = transaction {
+        val updated = Wishlists.update({
+            (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
+        }) {
             it[Wishlists.name] = name
             it[updatedAt] = currentLocalDateTime()
         }
@@ -77,10 +83,12 @@ object WishlistRepository {
     }
 
     /**
-     * Soft delete a wishlist
+     * Soft delete a wishlist (only if user owns it)
      */
-    fun deleteWishlist(id: Int): Boolean = transaction {
-        val updated = Wishlists.update({ (Wishlists.id eq id) and Wishlists.deletedAt.isNull() }) {
+    fun deleteWishlist(id: Int, userId: Int): Boolean = transaction {
+        val updated = Wishlists.update({
+            (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
+        }) {
             it[deletedAt] = currentLocalDateTime()
             it[updatedAt] = currentLocalDateTime()
         }
@@ -89,6 +97,7 @@ object WishlistRepository {
 
     private fun ResultRow.toWishlist() = Wishlist(
         id = this[Wishlists.id],
+        userId = this[Wishlists.userId],
         name = this[Wishlists.name],
         createdAt = this[Wishlists.createdAt],
         updatedAt = this[Wishlists.updatedAt],

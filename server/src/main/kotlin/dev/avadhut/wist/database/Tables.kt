@@ -6,8 +6,22 @@ import org.jetbrains.exposed.v1.core.Column
 import org.jetbrains.exposed.v1.core.Table
 import org.jetbrains.exposed.v1.datetime.datetime
 
+object Users : Table("users") {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val email: Column<String> = varchar("email", 255).uniqueIndex()
+    val passwordHash: Column<String> = varchar("password_hash", 255)
+    val name: Column<String?> = varchar("name", 255).nullable()
+    val createdAt: Column<LocalDateTime> =
+        datetime("created_at").clientDefault { currentLocalDateTime() }
+    val updatedAt: Column<LocalDateTime> =
+        datetime("updated_at").clientDefault { currentLocalDateTime() }
+
+    override val primaryKey = PrimaryKey(id)
+}
+
 object Wishlists : Table("wishlists") {
     val id: Column<Int> = integer("id").autoIncrement()
+    val userId: Column<Int> = integer("user_id").references(Users.id)
     val name: Column<String> = varchar("name", 255)
     val createdAt: Column<LocalDateTime> =
         datetime("created_at").clientDefault { currentLocalDateTime() }

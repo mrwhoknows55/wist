@@ -34,7 +34,7 @@ object DatabaseFactory {
 
         // Create schema
         transaction {
-            SchemaUtils.create(Wishlists, WishlistItems)
+            SchemaUtils.create(Users, Wishlists, WishlistItems)
         }
         logger.info("Database initialized and schema created")
     }

@@ -9,6 +9,11 @@ firecrawl:
   apiKey: ${?FIRECRAWL_API_KEY}
   baseUrl: "https://api.firecrawl.dev"
 
+jwt:
+  secret: ${?JWT_SECRET}
+  issuer: "wist-server"
+  audience: "wist-users"
+
 db:
   driver: "org.postgresql.Driver"
   url: ${?DB_URL}

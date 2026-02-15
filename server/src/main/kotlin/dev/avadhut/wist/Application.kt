@@ -9,6 +9,6 @@ fun main(args: Array<String>) {
 }
 
 fun Application.module() {
-    val firecrawlService = configurePlugins()
-    configureRouting(firecrawlService)
+    val services = configurePlugins()
+    configureRouting(services)
 }
