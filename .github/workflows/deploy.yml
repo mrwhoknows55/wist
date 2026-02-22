@@ -38,7 +38,7 @@ jobs:
           # Use git short SHA for version
           VERSION=$(git rev-parse --short HEAD)
 
-          echo "tags=${IMAGE}:${VERSION}" >> $GITHUB_OUTPUT
+          echo "tags=${IMAGE}:${VERSION},${IMAGE}:latest" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Build and push

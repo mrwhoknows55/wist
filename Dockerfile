@@ -1,4 +1,4 @@
-FROM gradle:8.14.3-jdk17 AS build
+FROM gradle:8.14.3-jdk21 AS build
 WORKDIR /app
 COPY gradle gradle
 COPY build.gradle* settings.gradle* ./
@@ -7,7 +7,7 @@ RUN gradle dependencies
 COPY . .
 RUN gradle buildFatJar --no-daemon
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 
