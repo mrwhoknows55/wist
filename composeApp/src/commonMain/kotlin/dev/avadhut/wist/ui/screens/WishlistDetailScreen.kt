@@ -48,6 +48,7 @@ fun WishlistDetailScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showAddSheet by remember { mutableStateOf(false) }
+    var isAddingItem by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -175,16 +176,25 @@ fun WishlistDetailScreen(
                 // TODO: Handle create new list from sheet
             },
             onConfirm = {
-                scope.launch {
-                    val targetLists = allWishlists.filter { it.name in selectedListNames }
-                    targetLists.forEach { list ->
-                        apiClient.wishlistItems.addItemToWishlist(list.id, urlToAdd)
+                if (!isAddingItem) {
+                    scope.launch {
+                        isAddingItem = true
+                        try {
+                            val targetLists = allWishlists.filter { it.name in selectedListNames }
+                            targetLists.forEach { list ->
+                                apiClient.wishlistItems.addItemToWishlist(list.id, urlToAdd)
+                            }
+                            showAddSheet = false
+                            urlToAdd = ""
+                            loadData()
+                        } finally {
+                            isAddingItem = false
+                        }
                     }
-                    showAddSheet = false
-                    urlToAdd = ""
-                    loadData() // Refresh
                 }
             },
-            onClose = { showAddSheet = false })
+            onClose = { showAddSheet = false },
+            isLoading = isAddingItem
+        )
     }
 }

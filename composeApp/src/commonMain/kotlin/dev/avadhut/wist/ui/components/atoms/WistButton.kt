@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -60,6 +62,7 @@ fun WistButton(
     modifier: Modifier = Modifier,
     style: WistButtonStyle = WistButtonStyle.PRIMARY,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     fillMaxWidth: Boolean = false
 ) {
     val buttonModifier = modifier.height(WistDimensions.ButtonHeight)
@@ -70,7 +73,7 @@ fun WistButton(
             Button(
                 onClick = onClick,
                 modifier = buttonModifier,
-                enabled = enabled,
+                enabled = enabled && !isLoading,
                 shape = RoundedCornerShape(WistDimensions.ButtonRadius),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = TextPrimary,
@@ -83,9 +86,15 @@ fun WistButton(
                     vertical = WistDimensions.ButtonPaddingVertical
                 )
             ) {
-                Text(
-                    text = text, style = MaterialTheme.typography.labelLarge
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = BackgroundPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(text = text, style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
 
@@ -93,7 +102,7 @@ fun WistButton(
             OutlinedButton(
                 onClick = onClick,
                 modifier = buttonModifier,
-                enabled = enabled,
+                enabled = enabled && !isLoading,
                 shape = RoundedCornerShape(WistDimensions.ButtonRadius),
                 border = BorderStroke(
                     width = 1.dp,

@@ -91,7 +91,8 @@ fun AddLinkBottomSheetContent(
     onCreateNewList: () -> Unit,
     onConfirm: () -> Unit,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false
 ) {
     Column(
         modifier = modifier.fillMaxWidth().background(BackgroundSurface)
@@ -249,7 +250,8 @@ fun AddLinkBottomSheetContent(
             text = "Confirm",
             onClick = onConfirm,
             style = WistButtonStyle.PRIMARY,
-            fillMaxWidth = true
+            fillMaxWidth = true,
+            isLoading = isLoading
         )
 
         Spacer(
