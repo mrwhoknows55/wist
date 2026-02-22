@@ -33,6 +33,10 @@ kotlin {
             implementation(libs.kotlin.test)
         }
     }
+
+    kotlin {
+        jvmToolchain(21)
+    }
 }
 
 android {

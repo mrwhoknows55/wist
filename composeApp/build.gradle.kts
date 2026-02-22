@@ -67,6 +67,10 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
         }
     }
+
+    kotlin {
+        jvmToolchain(21)
+    }
 }
 
 android {
