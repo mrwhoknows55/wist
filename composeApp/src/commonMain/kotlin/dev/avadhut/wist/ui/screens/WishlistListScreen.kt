@@ -78,17 +78,15 @@ fun WishlistListScreen(
     var selectedListNames by remember { mutableStateOf(setOf<String>()) }
     val sheetState = rememberModalBottomSheetState()
 
-    fun loadWishlists() {
-        scope.launch {
-            isLoading = true
-            apiClient.wishlists.getAllWishlists().onSuccess {
-                wishlists = it
-                error = null
-            }.onFailure {
-                error = it.message ?: "Failed to load wishlists"
-            }
-            isLoading = false
+    suspend fun loadWishlists() {
+        isLoading = true
+        apiClient.wishlists.getAllWishlists().onSuccess {
+            wishlists = it
+            error = null
+        }.onFailure {
+            error = it.message ?: "Failed to load wishlists"
         }
+        isLoading = false
     }
 
     LaunchedEffect(Unit) {
@@ -278,7 +276,7 @@ fun SecondOpinionCard() {
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        "Get Started",
+                        "Coming Soon",
                         color = Color.White,
                         style = MaterialTheme.typography.labelMedium
                     )

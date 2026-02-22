@@ -7,11 +7,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.ui.screens.ComponentDemoScreen
+import dev.avadhut.wist.ui.screens.LoginScreen
+import dev.avadhut.wist.ui.screens.SignupScreen
 import dev.avadhut.wist.ui.screens.WishlistDetailScreen
 import dev.avadhut.wist.ui.screens.WishlistListScreen
 import dev.avadhut.wist.ui.theme.WistTheme
 
 enum class Screen {
+    Login,
+    Signup,
     Home,
     Detail,
     Demo
@@ -22,10 +26,22 @@ fun App(
     apiClient: WistApiClient = remember { WistApiClient() }
 ) {
     WistTheme {
-        var currentScreen by remember { mutableStateOf(Screen.Home) }
+        var currentScreen by remember { mutableStateOf(Screen.Login) }
         var selectedWishlistId by remember { mutableStateOf<Int?>(null) }
 
         when (currentScreen) {
+            Screen.Login -> LoginScreen(
+                apiClient = apiClient,
+                onLoginSuccess = { currentScreen = Screen.Home },
+                onNavigateToSignup = { currentScreen = Screen.Signup }
+            )
+
+            Screen.Signup -> SignupScreen(
+                apiClient = apiClient,
+                onSignupSuccess = { currentScreen = Screen.Home },
+                onNavigateToLogin = { currentScreen = Screen.Login }
+            )
+
             Screen.Home -> WishlistListScreen(
                 apiClient = apiClient,
                 onWishlistClick = { id ->
@@ -44,7 +60,7 @@ fun App(
                 } ?: run { currentScreen = Screen.Home }
             }
 
-            Screen.Demo -> ComponentDemoScreen() // No easy back button from Demo unless we add one or use system back
+            Screen.Demo -> ComponentDemoScreen()
         }
     }
 }

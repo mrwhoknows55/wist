@@ -28,7 +28,7 @@ class AuthService(
     fun generateToken(user: User): String {
         return JWT.create().withIssuer(jwtIssuer).withAudience(jwtAudience)
             .withClaim("userId", user.id).withClaim("email", user.email)
-            .withExpiresAt(Date(System.currentTimeMillis() + jwtExpirationMs))
+            .withExpiresAt(Date(System.currentTimeMillis() + jwtExpirationMs.inWholeMilliseconds))
             .sign(Algorithm.HMAC256(jwtSecret))
     }
 

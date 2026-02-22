@@ -15,7 +15,7 @@ object DatabaseFactory {
     fun init(config: ApplicationConfig) {
         val driverClassName = config.property("db.driver").getString()
         val jdbcUrl =
-            config.propertyOrNull("db.url")?.getString() ?: "jdbc:postgresql://localhost:5432/"
+            config.propertyOrNull("db.url")?.getString() ?: "jdbc:postgresql://127.0.0.1:5432/"
         val username = config.propertyOrNull("db.user")?.getString() ?: "postgres"
         val password = config.propertyOrNull("db.password")?.getString() ?: "postgres"
 

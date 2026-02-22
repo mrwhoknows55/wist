@@ -55,9 +55,6 @@ fun Application.configurePlugins(): PluginServices {
         }
     }
 
-    // Extract userId from JWT into call attributes after authentication
-    install(UserIdExtractionPlugin)
-
     // Load Firecrawl configuration
     val firecrawlApiKey = environment.config.propertyOrNull("firecrawl.apiKey")?.getString()
         ?: throw IllegalStateException("FIRECRAWL_API_KEY environment variable is required")
