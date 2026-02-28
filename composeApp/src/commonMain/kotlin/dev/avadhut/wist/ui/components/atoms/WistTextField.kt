@@ -10,14 +10,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -33,8 +39,17 @@ fun WistTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
+    keyboardType: KeyboardType = KeyboardType.Unspecified,
+    imeAction: ImeAction = ImeAction.Default
 ) {
+    val keyboardType = when (keyboardType) {
+        KeyboardType.Unspecified -> if (isPassword) KeyboardType.Password else KeyboardType.Text
+        else -> keyboardType
+    }
+    val imeAction = if (imeAction != ImeAction.Default) imeAction else ImeAction.Next
+    var passwordState by mutableStateOf(isPassword)
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -68,7 +83,7 @@ fun WistTextField(
                 ),
                 singleLine = singleLine,
                 cursorBrush = SolidColor(TextPrimary),
-                visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+                visualTransformation = if (passwordState) PasswordVisualTransformation() else VisualTransformation.None,
                 decorationBox = { innerTextField ->
                     if (value.isEmpty()) {
                         Text(
@@ -78,7 +93,10 @@ fun WistTextField(
                         )
                     }
                     innerTextField()
-                }
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = keyboardType, imeAction = imeAction
+                ),
             )
         }
     }

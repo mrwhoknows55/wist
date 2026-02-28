@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.ui.components.atoms.AppLogoText
@@ -38,9 +42,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    apiClient: WistApiClient,
-    onLoginSuccess: () -> Unit,
-    onNavigateToSignup: () -> Unit
+    apiClient: WistApiClient, onLoginSuccess: () -> Unit, onNavigateToSignup: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -50,15 +52,12 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.navigationBarsPadding().imePadding().fillMaxSize()
             .background(BackgroundPrimary)
             .padding(horizontal = WistDimensions.ScreenPaddingHorizontal)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
+            modifier = Modifier.fillMaxWidth().align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AppLogoText()
@@ -76,7 +75,8 @@ fun LoginScreen(
             WistTextField(
                 value = email,
                 onValueChange = { email = it },
-                placeholder = "Email"
+                placeholder = "Email",
+                keyboardType = KeyboardType.Email
             )
 
             Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
@@ -85,15 +85,15 @@ fun LoginScreen(
                 value = password,
                 onValueChange = { password = it },
                 placeholder = "Password",
-                isPassword = true
+                isPassword = true,
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done
             )
 
             if (error != null) {
                 Spacer(modifier = Modifier.height(WistDimensions.SpacingMd))
                 Text(
-                    text = error!!,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AlertRed
+                    text = error!!, style = MaterialTheme.typography.bodyMedium, color = AlertRed
                 )
             }
 
@@ -135,8 +135,7 @@ fun LoginScreen(
                     }
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.clickable { onNavigateToSignup() }
-            )
+                modifier = Modifier.clickable { onNavigateToSignup() })
         }
     }
 }
