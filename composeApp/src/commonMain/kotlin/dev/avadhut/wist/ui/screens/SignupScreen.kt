@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SignupScreen(
     apiClient: WistApiClient,
-    onSignupSuccess: () -> Unit,
+    onSignupSuccess: (token: String) -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -133,7 +133,7 @@ fun SignupScreen(
                                 name = name.trim().ifBlank { null }
                             ).onSuccess { response ->
                                 apiClient.setToken(response.token)
-                                onSignupSuccess()
+                                onSignupSuccess(response.token)
                             }.onFailure { e ->
                                 error = e.message ?: "Signup failed"
                             }

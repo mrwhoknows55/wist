@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import coil3.compose.AsyncImage
 import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.PriceTag
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
@@ -129,7 +132,7 @@ fun ProductListItem(
 }
 
 /**
- * Product List Item Image - Thumbnail with placeholder
+ * Product List Item Image - Thumbnail with async image loading
  */
 @Composable
 private fun ProductListItemImage(
@@ -142,15 +145,21 @@ private fun ProductListItemImage(
             .background(BackgroundCard),
         contentAlignment = Alignment.Center
     ) {
-        // In production, use Coil or similar for image loading
-        // For now, show placeholder
-        Icon(
-            imageVector = Icons.Filled.Image,
-            contentDescription = null,
-            tint = TextDisabled,
-            modifier = Modifier.size(
-                WistDimensions.IconSizeLarge)
-        )
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Filled.Image,
+                contentDescription = null,
+                tint = TextDisabled,
+                modifier = Modifier.size(WistDimensions.IconSizeLarge)
+            )
+        }
     }
 }
 

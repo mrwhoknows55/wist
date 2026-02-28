@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.core.dto.WishlistItemDto
@@ -51,6 +52,7 @@ fun WishlistDetailScreen(
     var isAddingItem by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
 
@@ -140,9 +142,10 @@ fun WishlistDetailScreen(
                                     id = item.id.toString(),
                                     title = item.productName ?: item.sourceUrl,
                                     price = item.price ?: 0.0,
-                                    source = detectSourceFromUrl(item.sourceUrl)
+                                    source = detectSourceFromUrl(item.sourceUrl),
+                                    imageUrl = item.imageUrl
                                 ), onClick = {
-                                    // TODO: Open detail or edit
+                                    uriHandler.openUri(item.sourceUrl)
                                 }, modifier = Modifier.padding(vertical = WistDimensions.SpacingSm)
                             )
                         }

@@ -16,9 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import dev.avadhut.wist.ui.theme.BackgroundCard
 import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.WistDimensions
@@ -55,9 +57,10 @@ fun ProductGridItem(
         contentAlignment = Alignment.Center
     ) {
         if (imageUrl != null) {
-            // In a real app, use Coil or similar for image loading
-            // For now, show placeholder
-            ProductImagePlaceholder(
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {

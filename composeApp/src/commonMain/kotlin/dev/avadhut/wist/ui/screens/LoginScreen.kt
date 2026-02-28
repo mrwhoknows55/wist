@@ -42,7 +42,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
-    apiClient: WistApiClient, onLoginSuccess: () -> Unit, onNavigateToSignup: () -> Unit
+    apiClient: WistApiClient,
+    onLoginSuccess: (token: String) -> Unit,
+    onNavigateToSignup: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -110,7 +112,7 @@ fun LoginScreen(
                         scope.launch {
                             apiClient.auth.login(email.trim(), password).onSuccess { response ->
                                 apiClient.setToken(response.token)
-                                onLoginSuccess()
+                                onLoginSuccess(response.token)
                             }.onFailure { e ->
                                 error = e.message ?: "Login failed"
                             }

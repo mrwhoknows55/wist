@@ -1,11 +1,14 @@
 package dev.avadhut.wist
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.storage.InMemoryTokenStorage
+import dev.avadhut.wist.storage.TokenStorage
 import dev.avadhut.wist.ui.screens.ComponentDemoScreen
 import dev.avadhut.wist.ui.screens.LoginScreen
 import dev.avadhut.wist.ui.screens.SignupScreen
@@ -23,22 +26,48 @@ enum class Screen {
 
 @Composable
 fun App(
-    apiClient: WistApiClient = remember { WistApiClient() }
+    apiClient: WistApiClient = remember { WistApiClient() },
+    tokenStorage: TokenStorage = remember { InMemoryTokenStorage() }
 ) {
     WistTheme {
-        var currentScreen by remember { mutableStateOf(Screen.Login) }
+        var currentScreen by remember {
+            val existingToken = tokenStorage.getToken()
+            if (existingToken != null) {
+                apiClient.setToken(existingToken)
+                mutableStateOf(Screen.Home)
+            } else {
+                mutableStateOf(Screen.Login)
+            }
+        }
         var selectedWishlistId by remember { mutableStateOf<Int?>(null) }
+
+        // Validate stored token on launch - redirect to login if expired
+        LaunchedEffect(Unit) {
+            if (apiClient.isAuthenticated) {
+                apiClient.auth.getMe().onFailure {
+                    apiClient.clearToken()
+                    tokenStorage.clearToken()
+                    currentScreen = Screen.Login
+                }
+            }
+        }
 
         when (currentScreen) {
             Screen.Login -> LoginScreen(
                 apiClient = apiClient,
-                onLoginSuccess = { currentScreen = Screen.Home },
+                onLoginSuccess = { token ->
+                    tokenStorage.saveToken(token)
+                    currentScreen = Screen.Home
+                },
                 onNavigateToSignup = { currentScreen = Screen.Signup }
             )
 
             Screen.Signup -> SignupScreen(
                 apiClient = apiClient,
-                onSignupSuccess = { currentScreen = Screen.Home },
+                onSignupSuccess = { token ->
+                    tokenStorage.saveToken(token)
+                    currentScreen = Screen.Home
+                },
                 onNavigateToLogin = { currentScreen = Screen.Login }
             )
 
