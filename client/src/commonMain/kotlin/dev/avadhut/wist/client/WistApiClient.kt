@@ -12,7 +12,7 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class WistApiClient(
-    baseUrl: String = "http://localhost:8080"
+    baseUrl: String = "https://api.wist.avadhut.dev"
 ) {
     private var token: String? = null
 
