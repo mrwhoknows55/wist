@@ -19,3 +19,6 @@ db:
   url: ${?DB_URL}
   user: ${?DB_USER}
   password: ${?DB_PASSWORD}
+
+cache:
+  ttlHours: ${?CACHE_TTL_HOURS}

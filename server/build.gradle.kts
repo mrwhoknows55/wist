@@ -1,3 +1,5 @@
+import java.net.URI
+
 plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
@@ -57,3 +59,18 @@ dependencies {
     testImplementation(libs.kotlin.testJunit)
     testImplementation(libs.h2)
 }
+
+tasks.register("downloadClearUrlsRules") {
+    val outputFile = file("src/main/resources/clearurls-rules.json")
+    outputs.file(outputFile)
+    notCompatibleWithConfigurationCache("Downloads file from network")
+    doLast {
+        URI("https://rules2.clearurls.xyz/data.minify.json")
+            .toURL().openStream().use { input ->
+                outputFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+    }
+}
+tasks.named("processResources") { dependsOn("downloadClearUrlsRules") }

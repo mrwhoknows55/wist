@@ -53,3 +53,16 @@ object WishlistItems : Table("wishlist_items") {
 
     override val primaryKey = PrimaryKey(id)
 }
+
+object ProductCacheTable : Table("product_cache") {
+    val id: Column<Int> = integer("id").autoIncrement()
+    val cacheKey: Column<String> = varchar("cache_key", 16).uniqueIndex()
+    val normalizedUrl: Column<String> = text("normalized_url")
+    val originalUrl: Column<String> = text("original_url")
+    val productData: Column<String> = text("product_data")
+    val createdAt: Column<LocalDateTime> =
+        datetime("created_at").clientDefault { currentLocalDateTime() }
+    val expiresAt: Column<LocalDateTime> = datetime("expires_at").index()
+
+    override val primaryKey = PrimaryKey(id)
+}
