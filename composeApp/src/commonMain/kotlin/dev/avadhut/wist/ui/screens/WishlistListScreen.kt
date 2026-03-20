@@ -39,11 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
+import dev.avadhut.wist.ui.clipboard.readPlainTextOrNull
 import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
 import dev.avadhut.wist.ui.components.atoms.WistButton
@@ -94,7 +95,7 @@ fun WishlistListScreen(
     var isPullRefreshing by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
     var urlToAdd by remember { mutableStateOf("") }
     var selectedListNames by remember { mutableStateOf(setOf<String>()) }
@@ -128,7 +129,9 @@ fun WishlistListScreen(
     // Check clipboard when sheet opens
     LaunchedEffect(showAddSheet) {
         if (showAddSheet) {
-            val clip = clipboardManager.getText()?.text
+            val clip = runCatching { clipboard.readPlainTextOrNull() }
+                .onFailure { println("[Wist] WishlistListScreen: clipboard read failed ${it.message}") }
+                .getOrNull()
             if (clip != null && (clip.startsWith("http") || clip.startsWith("www"))) {
                 clipboardContent = clip
                 if (urlToAdd.isEmpty()) urlToAdd = clip

@@ -27,7 +27,7 @@ private const val WIST_CLIENT_SOCKET_TIMEOUT_MS = 240_000L
 class WistApiClient(
     baseUrl: String = "https://api.wist.avadhut.dev",
     cacheStore: WistCacheStore = createDefaultWistCacheStore(),
-    mutationOutbox: MutationOutbox = NoOpMutationOutbox,
+    private val mutationOutbox: MutationOutbox = NoOpMutationOutbox,
     httpClientEngine: HttpClientEngine? = null,
 ) {
     private var token: String? = null
@@ -159,5 +159,6 @@ class WistApiClient(
 
     fun close() {
         httpClient.close()
+        mutationOutbox.apply { }
     }
 }

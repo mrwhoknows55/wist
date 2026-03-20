@@ -24,13 +24,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.core.dto.WishlistItemDto
+import dev.avadhut.wist.ui.clipboard.readPlainTextOrNull
 import dev.avadhut.wist.ui.components.atoms.detectSourceForWishlistItem
 import dev.avadhut.wist.ui.components.molecules.DetailListLoadingContent
 import dev.avadhut.wist.ui.components.molecules.LoadErrorWithRetry
@@ -61,7 +62,7 @@ fun WishlistDetailScreen(
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-    val clipboardManager = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
 
     suspend fun loadDetail(forceRemote: Boolean) {
@@ -114,7 +115,9 @@ fun WishlistDetailScreen(
     // Check clipboard when sheet opens (simulation)
     LaunchedEffect(showAddSheet) {
         if (showAddSheet) {
-            val clip = clipboardManager.getText()?.text
+            val clip = runCatching { clipboard.readPlainTextOrNull() }
+                .onFailure { println("[Wist] WishlistDetailScreen: clipboard read failed ${it.message}") }
+                .getOrNull()
             if (clip != null && (clip.startsWith("http") || clip.startsWith("www"))) {
                 clipboardContent = clip
                 // Optionally auto-fill if empty

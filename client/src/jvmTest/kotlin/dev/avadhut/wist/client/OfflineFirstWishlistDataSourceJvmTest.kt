@@ -21,7 +21,7 @@ import kotlin.test.assertTrue
 
 class OfflineFirstWishlistDataSourceJvmTest {
 
-    private val t = LocalDateTime.now()
+    private val t = LocalDateTime(year = 2026, month = 1, day = 1, hour = 12, minute = 12)
 
     @Test
     fun getAllWishlists_secondReadUsesCacheWhenForceRemoteFalse() = runBlocking {

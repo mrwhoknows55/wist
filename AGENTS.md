@@ -3,6 +3,30 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this
 repository.
 
+## Research and external references (default workflow)
+
+When touching **new APIs**, **deprecations**, **migrations**, **KMP/Compose behavior**, or **library
+idioms**, **start with the public web**, not with spelunking local Gradle caches or decompiling
+jars.
+
+1. **Official docs first**: Kotlin ([kotlinlang.org/docs](https://kotlinlang.org/docs/home.html)),
+   [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html), Jetpack / Android
+   ([developer.android.com](https://developer.android.com)), library READMEs and KDoc (e.g.
+   kotlinx-datetime, Ktor, Compose Multiplatform “What’s new” pages).
+2. **Release notes and migration guides**: They state renames, replacements, and breaking changes
+   (e.g. Compose UI 1.8+ `Clipboard` vs `ClipboardManager`, kotlinx-datetime 0.7 `Instant` move).
+3. **Articles, blog posts, and Q&A**: Use reputable posts and **accepted / highly scored** answers
+   on Stack Overflow or Kotlin Slack archives when docs are thin—especially for “how do I replace X
+   with Y?” **Cross-check the library version** against `gradle/libs.versions.toml`; older articles
+   go stale quickly.
+4. **GitHub issues / PRs**: Use for platform bugs, CMP tickets, and workarounds when docs do not
+   mention your case.
+5. **Local source only when necessary**: Inspecting dependencies under `~/.gradle` is a **last
+   resort** when documentation and search do not answer the question.
+
+Summarize or link the sources you relied on when the change is non-obvious (e.g. in PR description
+or a short comment only where the codebase already uses that pattern).
+
 ## Project Overview
 
 Wist is a Kotlin Multiplatform wishlist application with web scraping capabilities. It targets
@@ -328,6 +352,17 @@ from this library — not stringly-typed ISO fragments.
 15. ProGuard/R8 + shrinkResources — enable for release, keep rules updated
 
 ## Development Best Practices (from AGENTS.md)
+
+### Compose clipboard (CMP / Compose UI 1.8+)
+
+- Prefer **`LocalClipboard.current`** and the **`Clipboard`** interface with **`suspend`** *
+  *`getClipEntry()`** / **`setClipEntry()`** over deprecated **`LocalClipboardManager`** / *
+  *`ClipboardManager`** (
+  see [Compose Multiplatform 1.8.2 — New Clipboard interface](https://kotlinlang.org/docs/multiplatform/whats-new-compose-180.html)
+  and [Jetpack
+  `Clipboard` reference](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/Clipboard)).
+- Reading plain text is not always exposed on the common **`ClipEntry`** type; use platform helpers
+  or **`expect`/`actual`** where needed (browser clipboard stays async / permission-gated).
 
 1. Never hardcode colors - Use `MaterialTheme.colorScheme`
 2. Stateless Composables - Hoist state up, pass callbacks down
