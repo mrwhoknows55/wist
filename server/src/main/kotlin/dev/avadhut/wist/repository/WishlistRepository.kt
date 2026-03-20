@@ -1,12 +1,15 @@
 package dev.avadhut.wist.repository
 
 import dev.avadhut.wist.core.dto.WishlistDto
+import dev.avadhut.wist.database.WishlistItems
 import dev.avadhut.wist.database.Wishlists
 import dev.avadhut.wist.util.currentLocalDateTime
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -19,9 +22,14 @@ object WishlistRepository {
      * Get all non-deleted wishlists for a user
      */
     fun getAllWishlists(userId: Int): List<WishlistDto> = transaction {
-        Wishlists.selectAll()
+        val wishlists = Wishlists.selectAll()
             .where { (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull() }
             .orderBy(Wishlists.createdAt to SortOrder.DESC).map { it.toWishlistDto() }
+
+        val wishlistIds = wishlists.map { it.id }
+        val thumbnailsByWishlistId = getThumbnailsByWishlistIds(wishlistIds)
+
+        wishlists.map { it.copy(thumbnailUrls = thumbnailsByWishlistId[it.id].orEmpty()) }
     }
 
     /**
@@ -29,6 +37,7 @@ object WishlistRepository {
      */
     fun getWishlistById(id: Int): WishlistDto? = transaction {
         Wishlists.selectAll().where { Wishlists.id eq id }.map { it.toWishlistDto() }.singleOrNull()
+            ?.let { it.copy(thumbnailUrls = getThumbnailUrls(it.id)) }
     }
 
 
@@ -39,6 +48,7 @@ object WishlistRepository {
         Wishlists.selectAll().where {
             (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
         }.map { it.toWishlistDto() }.singleOrNull()
+            ?.let { it.copy(thumbnailUrls = getThumbnailUrls(it.id)) }
     }
 
     /**
@@ -82,6 +92,25 @@ object WishlistRepository {
             it[updatedAt] = currentLocalDateTime()
         }
         updated > 0
+    }
+
+    private fun getThumbnailUrls(wishlistId: Int): List<String> =
+        WishlistItems.selectAll()
+            .where { (WishlistItems.wishlistId eq wishlistId) and WishlistItems.imageUrl.isNotNull() }
+            .orderBy(WishlistItems.createdAt to SortOrder.DESC)
+            .limit(4)
+            .mapNotNull { it[WishlistItems.imageUrl] }
+
+    private fun getThumbnailsByWishlistIds(wishlistIds: List<Int>): Map<Int, List<String>> {
+        if (wishlistIds.isEmpty()) return emptyMap()
+
+        return WishlistItems.selectAll()
+            .where { (WishlistItems.wishlistId inList wishlistIds) and WishlistItems.imageUrl.isNotNull() }
+            .orderBy(WishlistItems.createdAt to SortOrder.DESC)
+            .groupBy { it[WishlistItems.wishlistId] }
+            .mapValues { (_, rows) ->
+                rows.take(4).mapNotNull { it[WishlistItems.imageUrl] }
+            }
     }
 
     private fun ResultRow.toWishlistDto() = WishlistDto(

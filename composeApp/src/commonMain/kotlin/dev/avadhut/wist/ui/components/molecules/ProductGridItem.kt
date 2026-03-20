@@ -60,7 +60,7 @@ fun ProductGridItem(
             AsyncImage(
                 model = imageUrl,
                 contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
         } else {

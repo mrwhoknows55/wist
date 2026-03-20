@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
@@ -54,6 +56,7 @@ import dev.avadhut.wist.ui.components.organisms.ClipboardItem
 import dev.avadhut.wist.ui.components.organisms.WishlistDisplayData
 import dev.avadhut.wist.ui.components.organisms.WishlistListItem
 import dev.avadhut.wist.ui.components.organisms.WistHomeTopAppBar
+import dev.avadhut.wist.ui.theme.AlertRed
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
 import dev.avadhut.wist.ui.theme.WistDimensions
@@ -70,6 +73,9 @@ fun WishlistListScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showAddSheet by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    var isAddingItem by remember { mutableStateOf(false) }
+    var addItemError by remember { mutableStateOf<String?>(null) }
+    var createWishlistError by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -83,8 +89,10 @@ fun WishlistListScreen(
         apiClient.wishlists.getAllWishlists().onSuccess {
             wishlists = it
             error = null
-        }.onFailure {
-            error = it.message ?: "Failed to load wishlists"
+            println("[Wist] WishlistListScreen: loaded ${it.size} wishlists")
+        }.onFailure { e ->
+            error = e.userVisibleMessage("Failed to load wishlists")
+            println("[Wist] WishlistListScreen: failed to load wishlists msg=${e.userVisibleMessage()}")
         }
         isLoading = false
     }
@@ -100,6 +108,10 @@ fun WishlistListScreen(
             if (clip != null && (clip.startsWith("http") || clip.startsWith("www"))) {
                 clipboardContent = clip
                 if (urlToAdd.isEmpty()) urlToAdd = clip
+            }
+            addItemError = null
+            if (wishlists.isNotEmpty() && selectedListNames.isEmpty()) {
+                selectedListNames = setOf(wishlists.first().name)
             }
         }
     }
@@ -181,7 +193,7 @@ fun WishlistListScreen(
                                     id = wishlist.id.toString(),
                                     name = wishlist.name,
                                     dateLabel = dateLabel,
-                                    productImages = emptyList(),
+                                    productImages = wishlist.thumbnailUrls.filter { it.isNotBlank() },
                                     sources = emptyList(),
                                     priceMin = 0.0,
                                     priceMax = 0.0
@@ -199,14 +211,30 @@ fun WishlistListScreen(
     }
 
     if (showCreateDialog) {
-        CreateWishlistDialog(onDismiss = { showCreateDialog = false }, onConfirm = { name ->
-            scope.launch {
-                apiClient.wishlists.createWishlist(name).onSuccess {
-                    loadWishlists()
-                    showCreateDialog = false
+        CreateWishlistDialog(
+            errorMessage = createWishlistError,
+            onDismiss = {
+                showCreateDialog = false
+                createWishlistError = null
+            },
+            onConfirm = { name ->
+                scope.launch {
+                    if (name.isBlank()) {
+                        createWishlistError = "Name is required"
+                        return@launch
+                    }
+                    apiClient.wishlists.createWishlist(name.trim()).onSuccess {
+                        createWishlistError = null
+                        loadWishlists()
+                        showCreateDialog = false
+                    }.onFailure { e ->
+                        createWishlistError = e.userVisibleMessage("Could not create wishlist")
+                        println("[Wist] WishlistListScreen: createWishlist failed msg=${e.userVisibleMessage()}")
+                    }
                 }
-            }
-        })
+            },
+            onClearError = { createWishlistError = null }
+        )
     }
 
     AddLinkBottomSheet(
@@ -228,16 +256,48 @@ fun WishlistListScreen(
             },
             onConfirm = {
                 scope.launch {
-                    val targetLists = wishlists.filter { it.name in selectedListNames }
-                    targetLists.forEach { list ->
-                        apiClient.wishlistItems.addItemToWishlist(list.id, urlToAdd)
+                    if (isAddingItem) return@launch
+                    val trimmedUrl = urlToAdd.trim()
+                    if (trimmedUrl.isBlank()) {
+                        addItemError = "Enter a product link"
+                        return@launch
                     }
-                    showAddSheet = false
-                    urlToAdd = ""
-                    // update list if needed or just notify
+                    if (selectedListNames.isEmpty()) {
+                        addItemError = "Pick at least one wishlist"
+                        return@launch
+                    }
+                    isAddingItem = true
+                    addItemError = null
+                    val targetLists = wishlists.filter { it.name in selectedListNames }
+                    if (targetLists.isEmpty()) {
+                        addItemError =
+                            "No matching wishlists. Pull to refresh or create a list first."
+                        isAddingItem = false
+                        println("[Wist] WishlistListScreen: add product aborted, targetLists empty")
+                        return@launch
+                    }
+                    var hasFailure = false
+                    for (list in targetLists) {
+                        if (hasFailure) break
+                        apiClient.wishlistItems.addItemToWishlist(list.id, trimmedUrl)
+                            .onFailure { e ->
+                                addItemError = e.userVisibleMessage("Failed to add item")
+                                hasFailure = true
+                                println("[Wist] WishlistListScreen: addItem failed listId=${list.id} msg=${e.userVisibleMessage()}")
+                            }
+                    }
+                    if (!hasFailure) {
+                        showAddSheet = false
+                        urlToAdd = ""
+                        loadWishlists()
+                    }
+                    isAddingItem = false
                 }
             },
-            onClose = { showAddSheet = false })
+            onClose = { showAddSheet = false },
+            isLoading = isAddingItem,
+            errorMessage = addItemError
+        )
     }
 }
 
@@ -347,22 +407,47 @@ fun FirstWishlistCard(onCreateClick: () -> Unit) {
 }
 
 @Composable
-fun CreateWishlistDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+fun CreateWishlistDialog(
+    errorMessage: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    onClearError: () -> Unit = {}
+) {
     var name by remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("New Wishlist") }, text = {
-        TextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            singleLine = true
-        )
-    }, confirmButton = {
-        Button(onClick = { onConfirm(name) }) {
-            Text("Create")
+    AlertDialog(
+        modifier = Modifier.imePadding(),
+        onDismissRequest = onDismiss,
+        title = { Text("New Wishlist") },
+        text = {
+            Column {
+                TextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        onClearError()
+                    },
+                    label = { Text("Name") },
+                    singleLine = true
+                )
+                if (!errorMessage.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AlertRed
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(name) }) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
         }
-    }, dismissButton = {
-        TextButton(onClick = onDismiss) {
-            Text("Cancel")
-        }
-    })
+    )
 }

@@ -11,7 +11,8 @@ data class WishlistDto(
     val name: String,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
-    val deletedAt: LocalDateTime? = null
+    val deletedAt: LocalDateTime? = null,
+    val thumbnailUrls: List<String> = emptyList()
 )
 
 @Serializable

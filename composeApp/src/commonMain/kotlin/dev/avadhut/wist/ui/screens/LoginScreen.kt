@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.ui.components.atoms.AppLogoText
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
@@ -114,7 +115,8 @@ fun LoginScreen(
                                 apiClient.setToken(response.token)
                                 onLoginSuccess(response.token)
                             }.onFailure { e ->
-                                error = e.message ?: "Login failed"
+                                error = e.userVisibleMessage("Login failed")
+                                println("[Wist] LoginScreen: login failed msg=${e.userVisibleMessage()}")
                             }
                             isLoading = false
                         }

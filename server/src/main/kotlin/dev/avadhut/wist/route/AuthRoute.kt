@@ -77,11 +77,23 @@ fun Route.authRoutes(authService: AuthService) {
                         )
                     )
                 },
-                onFailure = {
-                    call.respond(
-                        HttpStatusCode.Unauthorized,
-                        mapOf("error" to "Invalid email or password")
-                    )
+                onFailure = { error ->
+                    when (error) {
+                        is AuthService.AuthFailure.UserNotFound -> call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("error" to (error.message ?: "User not found"))
+                        )
+
+                        is AuthService.AuthFailure.InvalidCredentials -> call.respond(
+                            HttpStatusCode.Unauthorized,
+                            mapOf("error" to (error.message ?: "Invalid email or password"))
+                        )
+
+                        else -> call.respond(
+                            HttpStatusCode.Unauthorized,
+                            mapOf("error" to (error.message ?: "Invalid email or password"))
+                        )
+                    }
                 }
             )
         }

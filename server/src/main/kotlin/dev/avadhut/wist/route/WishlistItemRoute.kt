@@ -79,7 +79,7 @@ fun Route.wishlistItemRoutes(wishlistItemService: WishlistItemService) {
                     call.respond(HttpStatusCode.Created, item)
                 } catch (e: FirecrawlException) {
                     call.respond(
-                        HttpStatusCode.BadGateway, mapOf("error" to "Scraping failed: ${e.message}")
+                        HttpStatusCode.BadGateway, mapOf("error" to "${e.message}")
                     )
                 } catch (e: Exception) {
                     call.respond(

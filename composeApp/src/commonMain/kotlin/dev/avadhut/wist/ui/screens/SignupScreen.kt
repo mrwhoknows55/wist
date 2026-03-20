@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.ui.components.atoms.AppLogoText
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
@@ -52,6 +55,8 @@ fun SignupScreen(
 
     Box(
         modifier = Modifier
+            .navigationBarsPadding()
+            .imePadding()
             .fillMaxSize()
             .background(BackgroundPrimary)
             .padding(horizontal = WistDimensions.ScreenPaddingHorizontal)
@@ -135,7 +140,8 @@ fun SignupScreen(
                                 apiClient.setToken(response.token)
                                 onSignupSuccess(response.token)
                             }.onFailure { e ->
-                                error = e.message ?: "Signup failed"
+                                error = e.userVisibleMessage("Signup failed")
+                                println("[Wist] SignupScreen: signup failed msg=${e.userVisibleMessage()}")
                             }
                             isLoading = false
                         }

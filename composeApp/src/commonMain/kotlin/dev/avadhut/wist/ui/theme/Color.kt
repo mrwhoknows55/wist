@@ -75,6 +75,8 @@ object SourceColors {
     val Amazon = Color(0xFFFF9900)
     val Flipkart = Color(0xFF2874F0)
     val Myntra = Color(0xFFFF3F6C)
+    val Ajio = Color(0xFF101820)
+    val Croma = Color(0xFF0DB14B)
     val Generic = Color(0xFF888888) // Fallback for unknown sources
 }
 

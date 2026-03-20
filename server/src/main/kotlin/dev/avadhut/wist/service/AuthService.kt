@@ -16,6 +16,10 @@ class AuthService(
     private val jwtAudience: String,
     private val jwtExpirationMs: Duration = 24.hours
 ) {
+    sealed class AuthFailure(message: String) : Exception(message) {
+        class UserNotFound : AuthFailure("User not found")
+        class InvalidCredentials : AuthFailure("Invalid email or password")
+    }
 
     fun hashPassword(password: String): String {
         return BCrypt.withDefaults().hashToString(12, password.toCharArray())
@@ -44,12 +48,11 @@ class AuthService(
     }
 
     fun login(email: String, password: String): Result<User> {
-        val user = UserRepository.getUserByEmail(email) ?: return Result.failure(
-            IllegalArgumentException("Invalid email or password")
-        )
+        val user = UserRepository.getUserByEmail(email)
+            ?: return Result.failure(AuthFailure.UserNotFound())
 
         if (!verifyPassword(password, user.passwordHash)) {
-            return Result.failure(IllegalArgumentException("Invalid email or password"))
+            return Result.failure(AuthFailure.InvalidCredentials())
         }
 
         return Result.success(user)

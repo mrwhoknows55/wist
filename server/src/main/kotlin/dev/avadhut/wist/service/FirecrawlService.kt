@@ -3,18 +3,36 @@ package dev.avadhut.wist.service
 import dev.avadhut.wist.core.dto.RetailerInfo
 import dev.avadhut.wist.core.dto.ScrapedProductDto
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
+
+private const val FIRECRAWL_REQUEST_TIMEOUT_MS = 180_000L
+private const val FIRECRAWL_CONNECT_TIMEOUT_MS = 30_000L
+private const val FIRECRAWL_SOCKET_TIMEOUT_MS = 180_000L
 
 /**
  * Service for scraping product data from URLs using the Firecrawl API.
@@ -35,6 +53,11 @@ class FirecrawlService(
         install(ContentNegotiation) {
             json(this@FirecrawlService.json)
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = FIRECRAWL_REQUEST_TIMEOUT_MS
+            connectTimeoutMillis = FIRECRAWL_CONNECT_TIMEOUT_MS
+            socketTimeoutMillis = FIRECRAWL_SOCKET_TIMEOUT_MS
+        }
     }
 
     /**
@@ -51,9 +74,11 @@ class FirecrawlService(
             setBody(requestBody)
         }
 
-        println("Firecrawl response status: ${response.status}, response: ${response.body<String>()}")
+        val responseBody = response.bodyAsText()
+        println("Firecrawl response status: ${response.status}, response: $responseBody")
 
-        val firecrawlResponse: FirecrawlResponse = response.body()
+        val firecrawlResponse: FirecrawlResponse =
+            json.decodeFromString<FirecrawlResponse>(responseBody)
 
         if (!firecrawlResponse.success) {
             throw FirecrawlException("Firecrawl scraping failed: ${firecrawlResponse.error}")
@@ -122,9 +147,23 @@ class FirecrawlService(
                                 put("type", "string")
                                 put("description", "Availability status like In Stock, Out of Stock")
                             }
+                            putJsonObject("success") {
+                                put("type", "boolean")
+                                put("description", "True if the data is scraped successfully")
+                            }
+                            putJsonObject("message") {
+                                put("type", "string")
+                                put(
+                                    "description",
+                                    "Extraction error details if the page is unavailable or blocked or required details are not found"
+                                )
+                            }
                         }
                         putJsonArray("required") {
                             add("title")
+                            add("success")
+                            add("price")
+                            add("currency")
                         }
                     }
                 }
@@ -137,6 +176,11 @@ class FirecrawlService(
     ): ScrapedProductDto {
         val json = response.data?.json ?: throw FirecrawlException("No JSON data in response")
         val metadata = response.data.metadata
+        val success: Boolean = json["success"]?.jsonPrimitive?.boolean ?: false
+        val extractedError = json["message"]?.jsonPrimitive?.contentOrNull
+        if (!success) {
+            throw FirecrawlException("Error: $extractedError")
+        }
 
         val retailer = extractRetailerFromUrl(sourceUrl)
 
@@ -157,8 +201,7 @@ class FirecrawlService(
             availability = json["availability"]?.jsonPrimitive?.contentOrNull,
             retailer = retailer,
             sourceUrl = sourceUrl,
-            scrapedAt = System.currentTimeMillis()
-        )
+            scrapedAt = System.currentTimeMillis())
     }
 
     private fun extractRetailerFromUrl(url: String): RetailerInfo {

@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -92,11 +94,14 @@ fun AddLinkBottomSheetContent(
     onConfirm: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    isLoading: Boolean = false
+    isLoading: Boolean = false,
+    errorMessage: String? = null
 ) {
     Column(
         modifier = modifier.fillMaxWidth().background(BackgroundSurface)
             .padding(WistDimensions.ScreenPaddingHorizontal)
+            .imePadding()
+            .navigationBarsPadding()
     ) {
         // Header: Title + Close button
         Row(
@@ -253,6 +258,15 @@ fun AddLinkBottomSheetContent(
             fillMaxWidth = true,
             isLoading = isLoading
         )
+
+        if (!errorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingMd))
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = dev.avadhut.wist.ui.theme.AlertRed
+            )
+        }
 
         Spacer(
             modifier = Modifier.height(

@@ -44,7 +44,7 @@ import dev.avadhut.wist.ui.theme.WistTheme
 data class ProductListItemData(
     val id: String,
     val title: String,
-    val price: Double,
+    val price: Double?,
     val currencyCode: String = "USD",
     val source: KnownSource,
     val imageUrl: String? = null
@@ -111,11 +111,18 @@ fun ProductListItem(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Price
-            PriceTag(
-                price = data.price,
-                currencyCode = data.currencyCode
-            )
+            if (data.price != null) {
+                PriceTag(
+                    price = data.price,
+                    currencyCode = data.currencyCode
+                )
+            } else {
+                Text(
+                    text = "—",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextDisabled
+                )
+            }
 
             Spacer(modifier = Modifier.height(
                 WistDimensions.SpacingXs)

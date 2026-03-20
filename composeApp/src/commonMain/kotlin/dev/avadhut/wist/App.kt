@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.storage.InMemoryTokenStorage
 import dev.avadhut.wist.storage.TokenStorage
 import dev.avadhut.wist.ui.screens.ComponentDemoScreen
@@ -44,7 +45,8 @@ fun App(
         // Validate stored token on launch - redirect to login if expired
         LaunchedEffect(Unit) {
             if (apiClient.isAuthenticated) {
-                apiClient.auth.getMe().onFailure {
+                apiClient.auth.getMe().onFailure { e ->
+                    println("[Wist] App: getMe failed, clearing session msg=${e.userVisibleMessage()}")
                     apiClient.clearToken()
                     tokenStorage.clearToken()
                     currentScreen = Screen.Login

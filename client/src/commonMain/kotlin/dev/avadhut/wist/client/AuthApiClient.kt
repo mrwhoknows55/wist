@@ -11,6 +11,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 
 class AuthApiClient(
@@ -24,21 +25,44 @@ class AuthApiClient(
         password: String,
         name: String? = null
     ): Result<AuthResponse> =
-        runCatchingSafe {
+        runCatchingSafe(statusMapper = { status, _ ->
+            when (status) {
+                HttpStatusCode.Conflict -> "An account with this email already exists"
+                else -> null
+            }
+        }) {
             httpClient.post("$apiPath/signup") {
                 contentType(ContentType.Application.Json)
                 setBody(SignupRequest(email, password, name))
             }.body()
         }
 
-    suspend fun login(email: String, password: String): Result<AuthResponse> = runCatchingSafe {
-        httpClient.post("$apiPath/login") {
-            contentType(ContentType.Application.Json)
-            setBody(LoginRequest(email, password))
-        }.body()
-    }
+    suspend fun login(email: String, password: String): Result<AuthResponse> =
+        runCatchingSafe(statusMapper = { status, _ ->
+            when (status) {
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden -> "Invalid email or password"
 
-    suspend fun getMe(): Result<UserDto> = runCatchingSafe {
-        httpClient.get("$apiPath/me").body()
-    }
+                HttpStatusCode.NotFound -> "User not found"
+                else -> null
+            }
+        }) {
+            httpClient.post("$apiPath/login") {
+                contentType(ContentType.Application.Json)
+                setBody(LoginRequest(email, password))
+            }.body()
+        }
+
+    suspend fun getMe(): Result<UserDto> =
+        runCatchingSafe(statusMapper = { status, _ ->
+            when (status) {
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden -> "Session expired. Please log in again."
+
+                HttpStatusCode.NotFound -> "User not found"
+                else -> null
+            }
+        }) {
+            httpClient.get("$apiPath/me").body()
+        }
 }

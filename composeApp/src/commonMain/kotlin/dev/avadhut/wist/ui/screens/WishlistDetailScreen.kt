@@ -25,9 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.core.dto.WishlistItemDto
-import dev.avadhut.wist.ui.components.atoms.detectSourceFromUrl
+import dev.avadhut.wist.ui.components.atoms.detectSourceForWishlistItem
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheet
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheetContent
 import dev.avadhut.wist.ui.components.organisms.BottomActionArea
@@ -50,6 +51,7 @@ fun WishlistDetailScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var showAddSheet by remember { mutableStateOf(false) }
     var isAddingItem by remember { mutableStateOf(false) }
+    var addItemError by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
@@ -62,14 +64,25 @@ fun WishlistDetailScreen(
             isLoading = true
             // Load Wishlist Details
             apiClient.wishlists.getWishlist(wishlistId).onSuccess { wishlist = it }
-                .onFailure { error = it.message ?: "Failed to load wishlist" }
+                .onFailure { e ->
+                    error = e.userVisibleMessage("Failed to load wishlist")
+                    println("[Wist] WishlistDetailScreen: getWishlist failed id=$wishlistId msg=${e.userVisibleMessage()}")
+                }
 
             // Load Items
-            apiClient.wishlistItems.getWishlistItems(wishlistId).onSuccess { items = it }
-                .onFailure { println("Failed to load items: ${it.message}") }
+            apiClient.wishlistItems.getWishlistItems(wishlistId).onSuccess {
+                items = it
+                println("[Wist] WishlistDetailScreen: loaded ${it.size} items for wishlistId=$wishlistId")
+            }.onFailure { e ->
+                println("[Wist] WishlistDetailScreen: failed to load items wishlistId=$wishlistId msg=${e.userVisibleMessage()}")
+                if (error == null) error = e.userVisibleMessage("Failed to load items")
+            }
 
             // Load All Wishlists for the sheet
             apiClient.wishlists.getAllWishlists().onSuccess { allWishlists = it }
+                .onFailure { e ->
+                    println("[Wist] WishlistDetailScreen: getAllWishlists failed msg=${e.userVisibleMessage()}")
+                }
 
             isLoading = false
         }
@@ -100,6 +113,7 @@ fun WishlistDetailScreen(
                 // Optionally auto-fill if empty
                 if (urlToAdd.isEmpty()) urlToAdd = clip
             }
+            addItemError = null
         }
     }
 
@@ -141,8 +155,14 @@ fun WishlistDetailScreen(
                                 data = ProductListItemData(
                                     id = item.id.toString(),
                                     title = item.productName ?: item.sourceUrl,
-                                    price = item.price ?: 0.0,
-                                    source = detectSourceFromUrl(item.sourceUrl),
+                                    price = item.price,
+                                    currencyCode = item.currency?.takeIf { it.isNotBlank() }
+                                        ?: "USD",
+                                    source = detectSourceForWishlistItem(
+                                        item.retailerDomain,
+                                        item.retailerName,
+                                        item.sourceUrl
+                                    ),
                                     imageUrl = item.imageUrl
                                 ), onClick = {
                                     uriHandler.openUri(item.sourceUrl)
@@ -181,15 +201,39 @@ fun WishlistDetailScreen(
             onConfirm = {
                 if (!isAddingItem) {
                     scope.launch {
+                        val trimmedUrl = urlToAdd.trim()
+                        if (trimmedUrl.isBlank()) {
+                            addItemError = "Enter a product link"
+                            return@launch
+                        }
+                        if (selectedListNames.isEmpty()) {
+                            addItemError = "Pick at least one wishlist"
+                            return@launch
+                        }
                         isAddingItem = true
+                        addItemError = null
                         try {
                             val targetLists = allWishlists.filter { it.name in selectedListNames }
-                            targetLists.forEach { list ->
-                                apiClient.wishlistItems.addItemToWishlist(list.id, urlToAdd)
+                            if (targetLists.isEmpty()) {
+                                addItemError = "No matching wishlists. Go back and refresh."
+                                println("[Wist] WishlistDetailScreen: add product aborted, targetLists empty")
+                                return@launch
                             }
-                            showAddSheet = false
-                            urlToAdd = ""
-                            loadData()
+                            var hasFailure = false
+                            for (list in targetLists) {
+                                if (hasFailure) break
+                                apiClient.wishlistItems.addItemToWishlist(list.id, trimmedUrl)
+                                    .onFailure { e ->
+                                        addItemError = e.userVisibleMessage("Failed to add item")
+                                        hasFailure = true
+                                        println("[Wist] WishlistDetailScreen: addItem failed listId=${list.id} msg=${e.userVisibleMessage()}")
+                                    }
+                            }
+                            if (!hasFailure) {
+                                showAddSheet = false
+                                urlToAdd = ""
+                                loadData()
+                            }
                         } finally {
                             isAddingItem = false
                         }
@@ -197,7 +241,8 @@ fun WishlistDetailScreen(
                 }
             },
             onClose = { showAddSheet = false },
-            isLoading = isAddingItem
+            isLoading = isAddingItem,
+            errorMessage = addItemError
         )
     }
 }

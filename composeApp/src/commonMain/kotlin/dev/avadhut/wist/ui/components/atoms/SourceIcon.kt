@@ -36,7 +36,10 @@ enum class KnownSource(
         SourceColors.Flipkart,
         "F"
     ),
-    MYNTRA("Myntra", SourceColors.Myntra, "M"), GENERIC("Web", SourceColors.Generic, "W")
+    MYNTRA("Myntra", SourceColors.Myntra, "M"),
+    AJIO("Ajio", SourceColors.Ajio, "J"),
+    CROMA("Croma", SourceColors.Croma, "C"),
+    GENERIC("Web", SourceColors.Generic, "W")
 }
 
 /**
@@ -130,17 +133,29 @@ fun SourceIconFromUrl(
     )
 }
 
-/**
- * Detects the source platform from a URL
- */
-fun detectSourceFromUrl(url: String): KnownSource {
-    val lowerUrl = url.lowercase()
+private fun knownSourceFromHint(hint: String): KnownSource? {
+    val h = hint.lowercase()
     return when {
-        lowerUrl.contains("amazon") -> KnownSource.AMAZON
-        lowerUrl.contains("flipkart") -> KnownSource.FLIPKART
-        lowerUrl.contains("myntra") -> KnownSource.MYNTRA
-        else -> KnownSource.GENERIC
+        h.contains("amazon") -> KnownSource.AMAZON
+        h.contains("flipkart") -> KnownSource.FLIPKART
+        h.contains("myntra") -> KnownSource.MYNTRA
+        h.contains("ajio") -> KnownSource.AJIO
+        h.contains("croma") -> KnownSource.CROMA
+        else -> null
     }
+}
+
+fun detectSourceFromUrl(url: String): KnownSource =
+    knownSourceFromHint(url) ?: KnownSource.GENERIC
+
+fun detectSourceForWishlistItem(
+    retailerDomain: String?,
+    retailerName: String?,
+    sourceUrl: String
+): KnownSource {
+    retailerDomain?.let { knownSourceFromHint(it) }?.let { return it }
+    retailerName?.let { knownSourceFromHint(it) }?.let { return it }
+    return detectSourceFromUrl(sourceUrl)
 }
 
 
