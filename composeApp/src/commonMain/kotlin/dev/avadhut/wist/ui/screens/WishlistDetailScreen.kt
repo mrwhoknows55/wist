@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -24,11 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.core.dto.WishlistItemDto
 import dev.avadhut.wist.ui.components.atoms.detectSourceForWishlistItem
+import dev.avadhut.wist.ui.components.molecules.DetailListLoadingContent
+import dev.avadhut.wist.ui.components.molecules.LoadErrorWithRetry
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheet
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheetContent
 import dev.avadhut.wist.ui.components.organisms.BottomActionArea
@@ -36,6 +41,7 @@ import dev.avadhut.wist.ui.components.organisms.ClipboardItem
 import dev.avadhut.wist.ui.components.organisms.ProductListItem
 import dev.avadhut.wist.ui.components.organisms.ProductListItemData
 import dev.avadhut.wist.ui.components.organisms.WistDetailTopAppBar
+import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.WistDimensions
 import kotlinx.coroutines.launch
 
@@ -58,38 +64,39 @@ fun WishlistDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
 
-    // Fetch Data
-    fun loadData() {
-        scope.launch {
-            isLoading = true
-            // Load Wishlist Details
-            apiClient.wishlists.getWishlist(wishlistId).onSuccess { wishlist = it }
-                .onFailure { e ->
-                    error = e.userVisibleMessage("Failed to load wishlist")
-                    println("[Wist] WishlistDetailScreen: getWishlist failed id=$wishlistId msg=${e.userVisibleMessage()}")
-                }
-
-            // Load Items
-            apiClient.wishlistItems.getWishlistItems(wishlistId).onSuccess {
-                items = it
-                println("[Wist] WishlistDetailScreen: loaded ${it.size} items for wishlistId=$wishlistId")
-            }.onFailure { e ->
-                println("[Wist] WishlistDetailScreen: failed to load items wishlistId=$wishlistId msg=${e.userVisibleMessage()}")
-                if (error == null) error = e.userVisibleMessage("Failed to load items")
+    suspend fun loadDetail(forceRemote: Boolean) {
+        isLoading = true
+        error = null
+        val wlResult = apiClient.wishlistData.getWishlist(wishlistId, forceRemote = forceRemote)
+        wlResult.onSuccess { wishlist = it }
+            .onFailure { e ->
+                error = e.userVisibleMessage("Failed to load wishlist")
+                println("[Wist] WishlistDetailScreen: getWishlist failed id=$wishlistId msg=${e.userVisibleMessage()}")
             }
 
-            // Load All Wishlists for the sheet
-            apiClient.wishlists.getAllWishlists().onSuccess { allWishlists = it }
-                .onFailure { e ->
-                    println("[Wist] WishlistDetailScreen: getAllWishlists failed msg=${e.userVisibleMessage()}")
-                }
-
-            isLoading = false
+        val itemsResult =
+            apiClient.wishlistData.getWishlistItems(wishlistId, forceRemote = forceRemote)
+        itemsResult.onSuccess {
+            items = it
+            println("[Wist] WishlistDetailScreen: loaded ${it.size} items wishlistId=$wishlistId forceRemote=$forceRemote")
+        }.onFailure { e ->
+            println("[Wist] WishlistDetailScreen: failed to load items wishlistId=$wishlistId msg=${e.userVisibleMessage()}")
+            if (error == null) error = e.userVisibleMessage("Failed to load items")
         }
+
+        apiClient.wishlistData.getAllWishlists(forceRemote = false).onSuccess { allWishlists = it }
+            .onFailure { e ->
+                println("[Wist] WishlistDetailScreen: getAllWishlists cache path failed msg=${e.userVisibleMessage()}")
+            }
+
+        if (forceRemote && wlResult.isSuccess && itemsResult.isSuccess) {
+            apiClient.markWishlistDetailSyncedFromRemote(wishlistId)
+        }
+        isLoading = false
     }
 
     LaunchedEffect(wishlistId) {
-        loadData()
+        loadDetail(apiClient.wishlistDetailForceRemote(wishlistId))
     }
 
     // Sheet State
@@ -131,9 +138,16 @@ fun WishlistDetailScreen(
     }) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                DetailListLoadingContent(modifier = Modifier.fillMaxSize())
             } else if (error != null) {
-                Text("Error: $error", modifier = Modifier.align(Alignment.Center))
+                LoadErrorWithRetry(
+                    message = error!!,
+                    onRetry = {
+                        println("[Wist] WishlistDetailScreen: error retry tapped")
+                        scope.launch { loadDetail(forceRemote = true) }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(WistDimensions.ScreenPaddingHorizontal),
@@ -144,10 +158,19 @@ fun WishlistDetailScreen(
                     }
                     if (items.isEmpty()) {
                         item {
-                            Text(
-                                "No items yet. Add one!",
-                                modifier = Modifier.align(Alignment.Center)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 240.dp)
+                                    .padding(vertical = WistDimensions.SpacingXxl),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "No items yet. Add one!",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = TextPrimary
+                                )
+                            }
                         }
                     } else {
                         items(items) { item ->
@@ -232,7 +255,8 @@ fun WishlistDetailScreen(
                             if (!hasFailure) {
                                 showAddSheet = false
                                 urlToAdd = ""
-                                loadData()
+                                apiClient.invalidateWishlistDetail(wishlistId)
+                                loadDetail(forceRemote = true)
                             }
                         } finally {
                             isAddingItem = false

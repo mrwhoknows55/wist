@@ -1,8 +1,14 @@
 package dev.avadhut.wist.client
 
+import dev.avadhut.wist.client.cache.WistCacheStore
+import dev.avadhut.wist.client.cache.createDefaultWistCacheStore
+import dev.avadhut.wist.client.sync.MutationOutbox
+import dev.avadhut.wist.client.sync.NoOpMutationOutbox
 import dev.avadhut.wist.client.util.ApiException
 import dev.avadhut.wist.client.util.parseErrorMessageFromJsonBody
 import io.ktor.client.HttpClient
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -19,11 +25,27 @@ private const val WIST_CLIENT_CONNECT_TIMEOUT_MS = 20_000L
 private const val WIST_CLIENT_SOCKET_TIMEOUT_MS = 240_000L
 
 class WistApiClient(
-    baseUrl: String = "https://api.wist.avadhut.dev"
+    baseUrl: String = "https://api.wist.avadhut.dev",
+    cacheStore: WistCacheStore = createDefaultWistCacheStore(),
+    mutationOutbox: MutationOutbox = NoOpMutationOutbox,
+    httpClientEngine: HttpClientEngine? = null,
 ) {
     private var token: String? = null
+    private var cacheUserId: Int? = null
+    private val cache: WistCacheStore = cacheStore
 
-    val httpClient = HttpClient {
+    private var homeWishlistListForceRemotePending = true
+    private val detailWishlistsSyncedRemotely = mutableSetOf<Int>()
+
+    // todo: in future use it for queueing things add offline
+
+    private fun resetWishlistFetchSession() {
+        homeWishlistListForceRemotePending = true
+        detailWishlistsSyncedRemotely.clear()
+        println("[Wist] WistApiClient: resetWishlistFetchSession")
+    }
+
+    private fun HttpClientConfig<*>.installWistPlugins() {
         install(Logging)
         install(ContentNegotiation) {
             json(Json {
@@ -69,16 +91,68 @@ class WistApiClient(
         }
     }
 
+    val httpClient = if (httpClientEngine != null) {
+        HttpClient(httpClientEngine) { installWistPlugins() }
+    } else {
+        HttpClient { installWistPlugins() }
+    }
+
     val auth = AuthApiClient(httpClient, baseUrl)
     val wishlists = WishlistApiClient(httpClient, baseUrl)
     val wishlistItems = WishlistItemApiClient(httpClient, baseUrl)
+
+    val wishlistData = OfflineFirstWishlistDataSource(
+        wishlists = wishlists,
+        wishlistItems = wishlistItems,
+        cache = cache,
+        cacheScopeId = { cacheUserId?.toString() },
+    )
+
+    fun setCacheScope(userId: Int?) {
+        val prev = cacheUserId
+        if (userId != null && prev != null && userId != prev) {
+            println("[Wist] WistApiClient: cache scope user changed $prev -> $userId, resetting fetch session")
+            resetWishlistFetchSession()
+        }
+        println("[Wist] WistApiClient: setCacheScope userId=$userId")
+        cacheUserId = userId
+    }
+
+    fun wishlistListForceRemoteForLaunch(): Boolean {
+        if (!homeWishlistListForceRemotePending) return false
+        homeWishlistListForceRemotePending = false
+        println("[Wist] WistApiClient: wishlistListForceRemoteForLaunch consumed -> true")
+        return true
+    }
+
+    fun wishlistDetailForceRemote(wishlistId: Int): Boolean {
+        val need = wishlistId !in detailWishlistsSyncedRemotely
+        println("[Wist] WistApiClient: wishlistDetailForceRemote wishlistId=$wishlistId -> $need")
+        return need
+    }
+
+    fun markWishlistDetailSyncedFromRemote(wishlistId: Int) {
+        detailWishlistsSyncedRemotely.add(wishlistId)
+        println("[Wist] WistApiClient: markWishlistDetailSyncedFromRemote wishlistId=$wishlistId")
+    }
+
+    fun invalidateWishlistDetail(wishlistId: Int) {
+        detailWishlistsSyncedRemotely.remove(wishlistId)
+        println("[Wist] WistApiClient: invalidateWishlistDetail wishlistId=$wishlistId")
+    }
 
     fun setToken(token: String) {
         this.token = token
     }
 
     fun clearToken() {
-        this.token = null
+        resetWishlistFetchSession()
+        cacheUserId?.toString()?.let { scopeId ->
+            println("[Wist] WistApiClient: clearToken clearing cache scope=$scopeId")
+            cache.clearScope(scopeId)
+        }
+        token = null
+        cacheUserId = null
     }
 
     val isAuthenticated: Boolean get() = token != null

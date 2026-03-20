@@ -19,6 +19,12 @@ val BackgroundSurface = Color(0xFF121212)
 /** Slightly lighter grey - Alternative card background */
 val BackgroundCard = Color(0xFF1E1E1E)
 
+/** Shimmer sweep — base stop (matches elevated surfaces) */
+val ShimmerBase = BackgroundCard
+
+/** Shimmer sweep — highlight stop */
+val ShimmerHighlight = Color(0xFF2E2E2E)
+
 /** Modal overlay with transparency */
 val BackgroundOverlay = Color(0xB3000000) // 70% opacity black
 

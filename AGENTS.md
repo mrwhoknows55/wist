@@ -260,6 +260,32 @@ db:
     - Logo URLs from Clearbit API
 - Timeout: 30s request timeout accommodates slow scraping operations
 
+## kotlinx-datetime (0.7.x) — project conventions
+
+Wist uses **`kotlinx-datetime` 0.7.x** with DTOs carrying **`LocalDateTime`** (and related types)
+from this library — not stringly-typed ISO fragments.
+
+- **Prefer typed values end-to-end**: Use `LocalDateTime`, `LocalDate`, `Instant` (
+  `kotlin.time.Instant` per 0.7 migration), `TimeZone`, and `Clock` as documented in
+  the [library README](https://github.com/Kotlin/kotlinx-datetime/blob/master/README.md). Avoid
+  parsing `toString()` / `substringBefore("T")` / manual `"MM" -> "Jan"` maps in UI or domain code.
+- **Display formatting**: Use **`kotlinx.datetime.format`** builders — e.g.
+  `LocalDate.Format { ... }` or `LocalDateTime.Format { ... }` with
+  `monthName(MonthNames.ENGLISH_ABBREVIATED)` (or `ENGLISH_FULL`), `day()`, `year()`, etc. For
+  Java-style patterns, prefer converting once via the library’s Unicode pattern tooling rather than
+  ad-hoc string splits.
+- **“Now” and zones**: Use `Clock.System.now()` and `TimeZone.currentSystemDefault()` (or an
+  explicit zone) when converting instants to civil time; do not assume UTC for user-visible dates
+  unless the product spec says so.
+- **Arithmetic and APIs that need a zone**: `Instant` calendar math (`plus`, `until`, `periodUntil`)
+  requires a **`TimeZone`**. `LocalDateTime` has **no** `plus`/`minus` in the library — convert to
+  `Instant` in a known zone, operate, then convert back for display.
+- **Serialization**: DTOs use `@Serializable` with `LocalDateTime` from kotlinx-datetime; keep wire
+  format ISO-8601 via serializers, not custom string hacks in the client.
+- **0.6 → 0.7**: Use **`kotlin.time.Instant`** / **`kotlin.time.Clock`** from the Kotlin stdlib
+  where the library expects them; resolve import clashes explicitly. See the README “Deprecation of
+  `Instant`” section if upgrading or using compat artifacts.
+
 ## Platform-Specific Notes
 
 ### Android

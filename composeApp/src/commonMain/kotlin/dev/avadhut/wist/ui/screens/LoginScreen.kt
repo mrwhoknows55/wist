@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +43,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun LoginScreen(
     apiClient: WistApiClient,
-    onLoginSuccess: (token: String) -> Unit,
+    onLoginSuccess: (token: String, userId: Int) -> Unit,
     onNavigateToSignup: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
@@ -102,30 +101,27 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
 
-            if (isLoading) {
-                CircularProgressIndicator(color = AccentPrimary)
-            } else {
-                WistButton(
-                    text = "Log in",
-                    onClick = {
-                        error = null
-                        isLoading = true
-                        scope.launch {
-                            apiClient.auth.login(email.trim(), password).onSuccess { response ->
-                                apiClient.setToken(response.token)
-                                onLoginSuccess(response.token)
-                            }.onFailure { e ->
-                                error = e.userVisibleMessage("Login failed")
-                                println("[Wist] LoginScreen: login failed msg=${e.userVisibleMessage()}")
-                            }
-                            isLoading = false
+            WistButton(
+                text = "Log in",
+                onClick = {
+                    error = null
+                    isLoading = true
+                    scope.launch {
+                        apiClient.auth.login(email.trim(), password).onSuccess { response ->
+                            apiClient.setToken(response.token)
+                            onLoginSuccess(response.token, response.user.id)
+                        }.onFailure { e ->
+                            error = e.userVisibleMessage("Login failed")
+                            println("[Wist] LoginScreen: login failed msg=${e.userVisibleMessage()}")
                         }
-                    },
-                    style = WistButtonStyle.PRIMARY,
-                    fillMaxWidth = true,
-                    enabled = email.isNotBlank() && password.isNotBlank()
-                )
-            }
+                        isLoading = false
+                    }
+                },
+                style = WistButtonStyle.PRIMARY,
+                fillMaxWidth = true,
+                enabled = email.isNotBlank() && password.isNotBlank(),
+                isLoading = isLoading
+            )
 
             Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
 

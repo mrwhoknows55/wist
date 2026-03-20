@@ -19,13 +19,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +48,8 @@ import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
+import dev.avadhut.wist.ui.components.molecules.HomeListLoadingContent
+import dev.avadhut.wist.ui.components.molecules.LoadErrorWithRetry
 import dev.avadhut.wist.ui.components.molecules.SearchInput
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheet
 import dev.avadhut.wist.ui.components.organisms.AddLinkBottomSheetContent
@@ -61,6 +63,19 @@ import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
 import dev.avadhut.wist.ui.theme.WistDimensions
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
+
+private val WishlistCreatedDateDisplayFormat = LocalDate.Format {
+    monthName(MonthNames.ENGLISH_ABBREVIATED)
+    char(' ')
+    day()
+}
+
+private fun wishlistCreatedAtLabel(createdAt: LocalDateTime): String =
+    "from ${WishlistCreatedDateDisplayFormat.format(createdAt.date)}"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +91,7 @@ fun WishlistListScreen(
     var isAddingItem by remember { mutableStateOf(false) }
     var addItemError by remember { mutableStateOf<String?>(null) }
     var createWishlistError by remember { mutableStateOf<String?>(null) }
+    var isPullRefreshing by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val clipboardManager = LocalClipboardManager.current
@@ -84,21 +100,29 @@ fun WishlistListScreen(
     var selectedListNames by remember { mutableStateOf(setOf<String>()) }
     val sheetState = rememberModalBottomSheetState()
 
-    suspend fun loadWishlists() {
-        isLoading = true
-        apiClient.wishlists.getAllWishlists().onSuccess {
-            wishlists = it
-            error = null
-            println("[Wist] WishlistListScreen: loaded ${it.size} wishlists")
-        }.onFailure { e ->
-            error = e.userVisibleMessage("Failed to load wishlists")
-            println("[Wist] WishlistListScreen: failed to load wishlists msg=${e.userVisibleMessage()}")
+    suspend fun loadWishlists(forceRemote: Boolean, pullRefresh: Boolean = false) {
+        if (pullRefresh) {
+            isPullRefreshing = true
+        } else if (forceRemote || wishlists.isEmpty()) {
+            isLoading = true
         }
-        isLoading = false
+        try {
+            apiClient.wishlistData.getAllWishlists(forceRemote = forceRemote).onSuccess {
+                wishlists = it
+                error = null
+                println("[Wist] WishlistListScreen: loaded ${it.size} wishlists forceRemote=$forceRemote pullRefresh=$pullRefresh")
+            }.onFailure { e ->
+                error = e.userVisibleMessage("Failed to load wishlists")
+                println("[Wist] WishlistListScreen: failed to load wishlists msg=${e.userVisibleMessage()}")
+            }
+        } finally {
+            isLoading = false
+            isPullRefreshing = false
+        }
     }
 
     LaunchedEffect(Unit) {
-        loadWishlists()
+        loadWishlists(forceRemote = apiClient.wishlistListForceRemoteForLaunch())
     }
 
     // Check clipboard when sheet opens
@@ -131,79 +155,65 @@ fun WishlistListScreen(
     }) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                HomeListLoadingContent(modifier = Modifier.fillMaxSize())
             } else if (error != null) {
-                Text("Error: $error", modifier = Modifier.align(Alignment.Center))
+                LoadErrorWithRetry(
+                    message = error!!, onRetry = {
+                        println("[Wist] WishlistListScreen: error retry tapped")
+                        scope.launch { loadWishlists(forceRemote = true) }
+                    }, modifier = Modifier.fillMaxSize()
+                )
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = WistDimensions.ScreenPaddingHorizontal),
-                    modifier = Modifier.fillMaxSize()
+                PullToRefreshBox(
+                    isRefreshing = isPullRefreshing,
+                    onRefresh = {
+                        scope.launch {
+                            loadWishlists(forceRemote = true, pullRefresh = true)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
                 ) {
-                    item {
-                        SearchInput(
-                            value = searchText,
-                            onValueChange = { searchText = it },
-                            onFilterClick = {})
-                        Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
-                    }
-
-                    // Second Opinion Card
-                    item {
-                        SecondOpinionCard()
-                    }
-
-                    if (wishlists.isEmpty()) {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = WistDimensions.ScreenPaddingHorizontal),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         item {
-                            FirstWishlistCard(onCreateClick = { showCreateDialog = true })
+                            SearchInput(
+                                value = searchText,
+                                onValueChange = { searchText = it },
+                                onFilterClick = {})
+                            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                         }
-                    } else {
-                        items(wishlists.filter {
-                            it.name.contains(
-                                searchText, ignoreCase = true
-                            )
-                        }) { wishlist ->
-                            // Format date as "from Jan 22" style
-                            val dateLabel =
-                                wishlist.createdAt.toString().substringBefore("T").let { isoDate ->
-                                    try {
-                                        val parts = isoDate.split("-")
-                                        val month = when (parts.getOrNull(1)) {
-                                            "01" -> "Jan"
-                                            "02" -> "Feb"
-                                            "03" -> "Mar"
-                                            "04" -> "Apr"
-                                            "05" -> "May"
-                                            "06" -> "Jun"
-                                            "07" -> "Jul"
-                                            "08" -> "Aug"
-                                            "09" -> "Sep"
-                                            "10" -> "Oct"
-                                            "11" -> "Nov"
-                                            "12" -> "Dec"
-                                            else -> "Jan"
-                                        }
-                                        val day = parts.getOrNull(2)?.toIntOrNull() ?: 1
-                                        "from $month $day"
-                                    } catch (_: Exception) {
-                                        isoDate
-                                    }
-                                }
-                            WishlistListItem(
-                                data = WishlistDisplayData(
-                                    id = wishlist.id.toString(),
-                                    name = wishlist.name,
-                                    dateLabel = dateLabel,
-                                    productImages = wishlist.thumbnailUrls.filter { it.isNotBlank() },
-                                    sources = emptyList(),
-                                    priceMin = 0.0,
-                                    priceMax = 0.0
-                                ), onClick = { onWishlistClick(wishlist.id) })
-                        }
-                    }
 
-                    // Spacer for bottom bar
-                    item {
-                        Spacer(modifier = Modifier.height(WistDimensions.SpacingXxl))
+                        item {
+                            SecondOpinionCard()
+                        }
+
+                        if (wishlists.isEmpty()) {
+                            item {
+                                FirstWishlistCard(onCreateClick = { showCreateDialog = true })
+                            }
+                        } else {
+                            items(wishlists.filter {
+                                it.name.contains(searchText, ignoreCase = true)
+                            }) { wishlist ->
+                                val dateLabel = wishlistCreatedAtLabel(wishlist.createdAt)
+                                WishlistListItem(
+                                    data = WishlistDisplayData(
+                                        id = wishlist.id.toString(),
+                                        name = wishlist.name,
+                                        dateLabel = dateLabel,
+                                        productImages = wishlist.thumbnailUrls.filter { it.isNotBlank() },
+                                        sources = emptyList(),
+                                        priceMin = 0.0,
+                                        priceMax = 0.0
+                                    ), onClick = { onWishlistClick(wishlist.id) })
+                            }
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(WistDimensions.SpacingXxl))
+                        }
                     }
                 }
             }
@@ -225,7 +235,7 @@ fun WishlistListScreen(
                     }
                     apiClient.wishlists.createWishlist(name.trim()).onSuccess {
                         createWishlistError = null
-                        loadWishlists()
+                        loadWishlists(forceRemote = true)
                         showCreateDialog = false
                     }.onFailure { e ->
                         createWishlistError = e.userVisibleMessage("Could not create wishlist")
@@ -287,9 +297,10 @@ fun WishlistListScreen(
                             }
                     }
                     if (!hasFailure) {
+                        targetLists.forEach { apiClient.invalidateWishlistDetail(it.id) }
                         showAddSheet = false
                         urlToAdd = ""
-                        loadWishlists()
+                        loadWishlists(forceRemote = true)
                     }
                     isAddingItem = false
                 }

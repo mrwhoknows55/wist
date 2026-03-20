@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +41,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SignupScreen(
     apiClient: WistApiClient,
-    onSignupSuccess: (token: String) -> Unit,
+    onSignupSuccess: (token: String, userId: Int) -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -113,44 +112,37 @@ fun SignupScreen(
 
             Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
 
-            if (isLoading) {
-                CircularProgressIndicator(color = AccentPrimary)
-            } else {
-                WistButton(
-                    text = "Sign up",
-                    onClick = {
-                        // Client-side validation
-                        if (email.isBlank()) {
-                            error = "Email is required"
-                            return@WistButton
-                        }
-                        if (password.length < 6) {
-                            error = "Password must be at least 6 characters"
-                            return@WistButton
-                        }
-
-                        error = null
-                        isLoading = true
-                        scope.launch {
-                            apiClient.auth.signup(
-                                email = email.trim(),
-                                password = password,
-                                name = name.trim().ifBlank { null }
-                            ).onSuccess { response ->
-                                apiClient.setToken(response.token)
-                                onSignupSuccess(response.token)
-                            }.onFailure { e ->
-                                error = e.userVisibleMessage("Signup failed")
-                                println("[Wist] SignupScreen: signup failed msg=${e.userVisibleMessage()}")
+            WistButton(
+                text = "Sign up",
+                onClick = {
+                    when {
+                        email.isBlank() -> error = "Email is required"
+                        password.length < 6 -> error = "Password must be at least 6 characters"
+                        else -> {
+                            error = null
+                            isLoading = true
+                            scope.launch {
+                                apiClient.auth.signup(
+                                    email = email.trim(),
+                                    password = password,
+                                    name = name.trim().ifBlank { null }
+                                ).onSuccess { response ->
+                                    apiClient.setToken(response.token)
+                                    onSignupSuccess(response.token, response.user.id)
+                                }.onFailure { e ->
+                                    error = e.userVisibleMessage("Signup failed")
+                                    println("[Wist] SignupScreen: signup failed msg=${e.userVisibleMessage()}")
+                                }
+                                isLoading = false
                             }
-                            isLoading = false
                         }
-                    },
-                    style = WistButtonStyle.PRIMARY,
-                    fillMaxWidth = true,
-                    enabled = email.isNotBlank() && password.isNotBlank()
-                )
-            }
+                    }
+                },
+                style = WistButtonStyle.PRIMARY,
+                fillMaxWidth = true,
+                enabled = email.isNotBlank() && password.isNotBlank(),
+                isLoading = isLoading
+            )
 
             Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
 

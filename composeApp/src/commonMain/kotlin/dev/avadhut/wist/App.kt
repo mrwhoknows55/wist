@@ -43,9 +43,17 @@ fun App(
         }
         var selectedWishlistId by remember { mutableStateOf<Int?>(null) }
 
-        LaunchedEffect(Unit) {
+        LaunchedEffect(apiClient.isAuthenticated) {
             if (apiClient.isAuthenticated) {
-                apiClient.auth.getMe().onFailure { e ->
+                tokenStorage.getCacheScopeUserId()?.let { restoredId ->
+                    apiClient.setCacheScope(restoredId)
+                    println("[Wist] App: restored cache scope userId=$restoredId from storage")
+                }
+                apiClient.auth.getMe().onSuccess { user ->
+                    apiClient.setCacheScope(user.id)
+                    tokenStorage.saveCacheScopeUserId(user.id)
+                    println("[Wist] App: getMe ok userId=${user.id}")
+                }.onFailure { e ->
                     val status = (e as? ApiException)?.httpStatusCode
                     val clearSession = status == 401 || status == 403 || status == 404
                     if (clearSession) {
@@ -66,18 +74,20 @@ fun App(
 
         when (currentScreen) {
             Screen.Login -> LoginScreen(
-                apiClient = apiClient,
-                onLoginSuccess = { token ->
+                apiClient = apiClient, onLoginSuccess = { token, userId ->
                     tokenStorage.saveToken(token)
+                    tokenStorage.saveCacheScopeUserId(userId)
+                    apiClient.setCacheScope(userId)
                     currentScreen = Screen.Home
                 },
                 onNavigateToSignup = { currentScreen = Screen.Signup }
             )
 
             Screen.Signup -> SignupScreen(
-                apiClient = apiClient,
-                onSignupSuccess = { token ->
+                apiClient = apiClient, onSignupSuccess = { token, userId ->
                     tokenStorage.saveToken(token)
+                    tokenStorage.saveCacheScopeUserId(userId)
+                    apiClient.setCacheScope(userId)
                     currentScreen = Screen.Home
                 },
                 onNavigateToLogin = { currentScreen = Screen.Login }
@@ -98,7 +108,7 @@ fun App(
                         wishlistId = id,
                         onBack = { currentScreen = Screen.Home }
                     )
-                } ?: run { currentScreen = Screen.Home }
+                } ?: { currentScreen = Screen.Home }
             }
 
             Screen.Demo -> ComponentDemoScreen()

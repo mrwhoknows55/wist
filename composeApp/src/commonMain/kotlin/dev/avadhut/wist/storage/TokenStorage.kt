@@ -4,10 +4,17 @@ interface TokenStorage {
     fun saveToken(token: String)
     fun getToken(): String?
     fun clearToken()
+
+    fun saveCacheScopeUserId(userId: Int) {}
+
+    fun getCacheScopeUserId(): Int? = null
+
+    fun clearCacheScopeUserId() {}
 }
 
 class InMemoryTokenStorage : TokenStorage {
     private var token: String? = null
+    private var cacheScopeUserId: Int? = null
 
     override fun saveToken(token: String) {
         this.token = token
@@ -17,5 +24,16 @@ class InMemoryTokenStorage : TokenStorage {
 
     override fun clearToken() {
         token = null
+        cacheScopeUserId = null
+    }
+
+    override fun saveCacheScopeUserId(userId: Int) {
+        cacheScopeUserId = userId
+    }
+
+    override fun getCacheScopeUserId(): Int? = cacheScopeUserId
+
+    override fun clearCacheScopeUserId() {
+        cacheScopeUserId = null
     }
 }
