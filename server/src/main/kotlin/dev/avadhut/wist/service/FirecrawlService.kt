@@ -29,8 +29,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import org.slf4j.LoggerFactory
 
 private const val FIRECRAWL_REQUEST_TIMEOUT_MS = 180_000L
+private const val FIRECRAWL_LOG_BODY_MAX = 500
 private const val FIRECRAWL_CONNECT_TIMEOUT_MS = 30_000L
 private const val FIRECRAWL_SOCKET_TIMEOUT_MS = 180_000L
 
@@ -42,6 +44,8 @@ class FirecrawlService(
     private val apiKey: String, 
     private val baseUrl: String = "https://api.firecrawl.dev"
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -61,13 +65,16 @@ class FirecrawlService(
     }
 
     /**
-     * Scrape product data from a URL.
-     * Uses Firecrawl's JSON extraction with a product schema.
+     * @param scrapeUrl URL sent to Firecrawl (typically normalized).
+     * @param originalUrlForDto Stored on [ScrapedProductDto] for retailer/source metadata.
      */
-    suspend fun scrapeProduct(url: String): ScrapedProductDto {
-        val requestBody = buildFirecrawlRequestJson(url)
-        println("Firecrawl request: $requestBody")
-        
+    suspend fun scrapeProduct(
+        scrapeUrl: String,
+        originalUrlForDto: String = scrapeUrl
+    ): ScrapedProductDto {
+        val requestBody = buildFirecrawlRequestJson(scrapeUrl)
+        logger.info("Firecrawl scrape request scrapeUrl={}", truncateForLog(scrapeUrl))
+
         val response = client.post("$baseUrl/v2/scrape") {
             contentType(ContentType.Application.Json)
             header("Authorization", "Bearer $apiKey")
@@ -75,7 +82,17 @@ class FirecrawlService(
         }
 
         val responseBody = response.bodyAsText()
-        println("Firecrawl response status: ${response.status}, response: $responseBody")
+        val bodyPreview = if (responseBody.length <= FIRECRAWL_LOG_BODY_MAX) {
+            responseBody
+        } else {
+            responseBody.take(FIRECRAWL_LOG_BODY_MAX) + "..."
+        }
+        logger.info(
+            "Firecrawl scrape response status={} bodyLen={} bodyPreview={}",
+            response.status,
+            responseBody.length,
+            bodyPreview,
+        )
 
         val firecrawlResponse: FirecrawlResponse =
             json.decodeFromString<FirecrawlResponse>(responseBody)
@@ -84,8 +101,11 @@ class FirecrawlService(
             throw FirecrawlException("Firecrawl scraping failed: ${firecrawlResponse.error}")
         }
 
-        return mapToScrapedProduct(firecrawlResponse, url)
+        return mapToScrapedProduct(firecrawlResponse, originalUrlForDto)
     }
+
+    private fun truncateForLog(url: String, max: Int = 120): String =
+        if (url.length <= max) url else url.take(max - 3) + "..."
 
     private fun buildFirecrawlRequestJson(url: String): JsonObject {
         return buildJsonObject {

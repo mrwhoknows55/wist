@@ -14,6 +14,7 @@ class ApplicationTest {
             config = io.ktor.server.config.MapApplicationConfig(
                 "firecrawl.apiKey" to "test-api-key",
                 "firecrawl.baseUrl" to "https://api.firecrawl.dev",
+                "jwt.secret" to "test-jwt-secret-at-least-32-chars-long!!",
                 "db.driver" to "org.h2.Driver",
                 "db.url" to "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
                 "db.user" to "sa",

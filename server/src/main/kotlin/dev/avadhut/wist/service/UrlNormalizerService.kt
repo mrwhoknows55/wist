@@ -18,6 +18,7 @@ import java.security.MessageDigest
 
 private const val CLEARURLS_RULES_URL = "https://rules2.clearurls.xyz/data.minify.json"
 private const val CLEARURLS_RULES_TIMEOUT_MS = 10_000L
+private const val LOG_URL_MAX = 120
 
 private data class ProviderRules(
     val urlPattern: Regex,
@@ -132,13 +133,28 @@ class UrlNormalizerService {
     }
 
     fun normalize(url: String): String {
-        return try {
+        val result = try {
             normalizeInternal(url)
         } catch (e: Exception) {
-            logger.debug("UrlNormalizerService: normalize failed for '$url': ${e.message}")
-            url
+            logger.debug(
+                "UrlNormalizerService: normalize failed for '{}': {}",
+                truncateUrlForLog(url),
+                e.message
+            )
+            return url
         }
+        if (result != url) {
+            logger.info(
+                "UrlNormalizerService: stripped tracking params before={} after={}",
+                truncateUrlForLog(url),
+                truncateUrlForLog(result),
+            )
+        }
+        return result
     }
+
+    private fun truncateUrlForLog(url: String): String =
+        if (url.length <= LOG_URL_MAX) url else url.take(LOG_URL_MAX - 3) + "..."
 
     private fun normalizeInternal(url: String): String {
         val uri = URI(url)
