@@ -54,7 +54,7 @@ class WistApiClient(
                     ?: fallbackMessage
                 if (message.isNullOrBlank()) return@validateResponse
                 println("[Wist] WistApiClient: HTTP ${response.status.value} -> $message")
-                throw ApiException(message)
+                throw ApiException(message, httpStatusCode = response.status.value)
             }
         }
 

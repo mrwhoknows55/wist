@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.ApiException
 import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.storage.InMemoryTokenStorage
 import dev.avadhut.wist.storage.TokenStorage
@@ -42,14 +43,23 @@ fun App(
         }
         var selectedWishlistId by remember { mutableStateOf<Int?>(null) }
 
-        // Validate stored token on launch - redirect to login if expired
         LaunchedEffect(Unit) {
             if (apiClient.isAuthenticated) {
                 apiClient.auth.getMe().onFailure { e ->
-                    println("[Wist] App: getMe failed, clearing session msg=${e.userVisibleMessage()}")
-                    apiClient.clearToken()
-                    tokenStorage.clearToken()
-                    currentScreen = Screen.Login
+                    val status = (e as? ApiException)?.httpStatusCode
+                    val clearSession = status == 401 || status == 403 || status == 404
+                    if (clearSession) {
+                        println(
+                            "[Wist] App: getMe rejected by server status=$status msg=${e.userVisibleMessage()} — clearing session",
+                        )
+                        apiClient.clearToken()
+                        tokenStorage.clearToken()
+                        currentScreen = Screen.Login
+                    } else {
+                        println(
+                            "[Wist] App: getMe failed (keeping stored token) status=$status type=${e::class.simpleName} msg=${e.message}",
+                        )
+                    }
                 }
             }
         }

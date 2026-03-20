@@ -8,7 +8,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class ApiException(message: String) : Exception(message)
+class ApiException(
+    message: String,
+    val httpStatusCode: Int? = null,
+) : Exception(message)
 
 private val errorJson = Json { ignoreUnknownKeys = true }
 
@@ -45,7 +48,12 @@ suspend inline fun <R> runCatchingSafe(
     } catch (e: ResponseException) {
         val serverMessage = extractErrorMessage(e) ?: e.response.status.description
         val mappedMessage = statusMapper(e.response.status, serverMessage)
-        Result.failure(ApiException(mappedMessage ?: serverMessage))
+        Result.failure(
+            ApiException(
+                mappedMessage ?: serverMessage,
+                httpStatusCode = e.response.status.value,
+            ),
+        )
     } catch (e: Throwable) {
         Result.failure(e)
     }
