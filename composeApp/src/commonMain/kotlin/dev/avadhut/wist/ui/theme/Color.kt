@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 
 // BACKGROUNDS
 
-/** Pure Black - Main screen background for maximum contrast */
+/** Pure Black - Main screen background for maximum contrast. Keep in sync with `androidMain/res/values/colors.xml` (`wist_background`) for the Android window theme. */
 val BackgroundPrimary = Color(0xFF000000)
 
 /** Dark Grey - Surface/Card background for elevated content */

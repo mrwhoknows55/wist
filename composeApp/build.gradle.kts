@@ -1,6 +1,17 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val wistLocalProperties = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
+fun wistLocalProperty(key: String, default: String): String =
+    wistLocalProperties.getProperty(key)?.trim()?.takeIf { it.isNotEmpty() } ?: default
+
+val wistApiBaseUrl = wistLocalProperty("wist.api.baseUrl", "https://api.wist.avadhut.dev")
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -87,6 +98,9 @@ kotlin {
 android {
     namespace = "dev.avadhut.wist"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+    buildFeatures {
+        buildConfig = true
+    }
 
     defaultConfig {
         applicationId = "dev.avadhut.wist"
@@ -94,6 +108,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        val escapedBaseUrl = wistApiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+        buildConfigField("String", "WIST_API_BASE_URL", "\"$escapedBaseUrl\"")
     }
     packaging {
         resources {
@@ -103,6 +119,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

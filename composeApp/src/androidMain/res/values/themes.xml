@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window / system UI colors align with WistTheme (dark); Compose owns in-app Material3 scheme. -->
+    <style name="Theme.Wist" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/wist_background</item>
+        <item name="android:colorBackground">@color/wist_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

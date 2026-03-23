@@ -13,14 +13,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-//        val baseUrl = "https://api.wist.avadhut.dev"
-//        val baseUrl = "http://10.0.2.2:8080"
-        val baseUrl = "http://192.168.31.4:8080"
         val tokenStorage = SharedPrefsTokenStorage(this)
+        val apiClient = WistApiClient(BuildConfig.WIST_API_BASE_URL)
         setContent {
             WistTheme {
                 App(
-                    apiClient = remember { WistApiClient(baseUrl) },
+                    apiClient = remember { apiClient },
                     tokenStorage = tokenStorage
                 )
             }
