@@ -25,7 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
 import dev.avadhut.wist.client.util.userVisibleMessage
@@ -49,7 +48,10 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistDetailScreen(
-    apiClient: WistApiClient, wishlistId: Int, onBack: () -> Unit
+    apiClient: WistApiClient,
+    wishlistId: Int,
+    onBack: () -> Unit,
+    onItemClick: (WishlistItemDto) -> Unit = {}
 ) {
     var wishlist by remember { mutableStateOf<WishlistDto?>(null) }
     var items by remember { mutableStateOf<List<WishlistItemDto>>(emptyList()) }
@@ -61,7 +63,6 @@ fun WishlistDetailScreen(
     var addItemError by remember { mutableStateOf<String?>(null) }
 
     val scope = rememberCoroutineScope()
-    val uriHandler = LocalUriHandler.current
     val clipboard = LocalClipboard.current
     var clipboardContent by remember { mutableStateOf<String?>(null) }
 
@@ -191,7 +192,7 @@ fun WishlistDetailScreen(
                                     ),
                                     imageUrl = item.imageUrl
                                 ), onClick = {
-                                    uriHandler.openUri(item.sourceUrl)
+                                    onItemClick(item)
                                 }, modifier = Modifier.padding(vertical = WistDimensions.SpacingSm)
                             )
                         }

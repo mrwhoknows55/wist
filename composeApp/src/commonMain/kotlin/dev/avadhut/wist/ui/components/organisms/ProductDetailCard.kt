@@ -1,11 +1,13 @@
 package dev.avadhut.wist.ui.components.organisms
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,15 +28,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.PriceTag
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
-import dev.avadhut.wist.ui.theme.AccentBlue
 import dev.avadhut.wist.ui.theme.AlertRed
 import dev.avadhut.wist.ui.theme.BackgroundCard
 import dev.avadhut.wist.ui.theme.BackgroundPrimary
@@ -62,6 +65,7 @@ enum class BuySignal(val label: String) {
 data class ProductDetailData(
     val id: String,
     val title: String,
+    val description: String? = null,
     val price: Double,
     val currencyCode: String = "USD",
     val source: KnownSource,
@@ -130,6 +134,15 @@ fun ProductDetailCard(
                 color = TextPrimary
             )
 
+            if (!data.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
+                Text(
+                    text = data.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+
             Spacer(modifier = Modifier.height(
                 WistDimensions.SpacingMd))
 
@@ -146,7 +159,8 @@ fun ProductDetailCard(
 
                 // Source link
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onSourceClick() }
                 ) {
                     SourceIcon(
                         source = data.source,
@@ -288,17 +302,24 @@ private fun ProductDetailImage(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier
-            .background(BackgroundSurface),
+        modifier = modifier.background(BackgroundSurface),
         contentAlignment = Alignment.Center
     ) {
-        // In production, use Coil or similar
-        Icon(
-            imageVector = Icons.Filled.Image,
-            contentDescription = null,
-            tint = TextDisabled,
-            modifier = Modifier.size(64.dp)
-        )
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Filled.Image,
+                contentDescription = null,
+                tint = TextDisabled,
+                modifier = Modifier.size(64.dp)
+            )
+        }
     }
 }
 
