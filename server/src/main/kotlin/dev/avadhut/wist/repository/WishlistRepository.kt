@@ -4,6 +4,7 @@ import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.database.WishlistItems
 import dev.avadhut.wist.database.Wishlists
 import dev.avadhut.wist.util.currentLocalDateTime
+import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
@@ -11,10 +12,14 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
+import org.jetbrains.exposed.v1.core.neq
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.jetbrains.exposed.v1.jdbc.update
+
+class WishlistNameConflictException(name: String) :
+    Exception("A wishlist named '$name' already exists")
 
 object WishlistRepository {
 
@@ -51,10 +56,24 @@ object WishlistRepository {
             ?.let { it.copy(thumbnailUrls = getThumbnailUrls(it.id)) }
     }
 
+    private fun activeWishlistWithNameExists(
+        userId: Int,
+        name: String,
+        excludeId: Int? = null
+    ): Boolean =
+        Wishlists.selectAll()
+            .where {
+                (Wishlists.userId eq userId) and
+                        (Wishlists.name eq name) and
+                        Wishlists.deletedAt.isNull() and
+                        (if (excludeId != null) (Wishlists.id neq excludeId) else Op.TRUE)
+            }.any()
+
     /**
      * Create a new wishlist for a user
      */
     fun createWishlist(name: String, userId: Int): WishlistDto = transaction {
+        if (activeWishlistWithNameExists(userId, name)) throw WishlistNameConflictException(name)
         val now = currentLocalDateTime()
         val id = Wishlists.insert {
             it[Wishlists.userId] = userId
@@ -72,6 +91,12 @@ object WishlistRepository {
      * Update wishlist name (only if user owns it)
      */
     fun updateWishlist(id: Int, name: String, userId: Int): Boolean = transaction {
+        if (activeWishlistWithNameExists(
+                userId,
+                name,
+                excludeId = id
+            )
+        ) throw WishlistNameConflictException(name)
         val updated = Wishlists.update({
             (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
         }) {

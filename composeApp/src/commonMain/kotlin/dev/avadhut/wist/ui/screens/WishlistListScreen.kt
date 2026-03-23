@@ -92,6 +92,7 @@ fun WishlistListScreen(
     var isAddingItem by remember { mutableStateOf(false) }
     var addItemError by remember { mutableStateOf<String?>(null) }
     var createWishlistError by remember { mutableStateOf<String?>(null) }
+    var isCreatingWishlist by remember { mutableStateOf(false) }
     var isPullRefreshing by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
@@ -226,16 +227,20 @@ fun WishlistListScreen(
     if (showCreateDialog) {
         CreateWishlistDialog(
             errorMessage = createWishlistError,
+            isLoading = isCreatingWishlist,
             onDismiss = {
                 showCreateDialog = false
                 createWishlistError = null
+                isCreatingWishlist = false
             },
             onConfirm = { name ->
+                if (isCreatingWishlist) return@CreateWishlistDialog
                 scope.launch {
                     if (name.isBlank()) {
                         createWishlistError = "Name is required"
                         return@launch
                     }
+                    isCreatingWishlist = true
                     apiClient.wishlists.createWishlist(name.trim()).onSuccess {
                         createWishlistError = null
                         loadWishlists(forceRemote = true)
@@ -244,6 +249,7 @@ fun WishlistListScreen(
                         createWishlistError = e.userVisibleMessage("Could not create wishlist")
                         println("[Wist] WishlistListScreen: createWishlist failed msg=${e.userVisibleMessage()}")
                     }
+                    isCreatingWishlist = false
                 }
             },
             onClearError = { createWishlistError = null }
@@ -423,6 +429,7 @@ fun FirstWishlistCard(onCreateClick: () -> Unit) {
 @Composable
 fun CreateWishlistDialog(
     errorMessage: String?,
+    isLoading: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onClearError: () -> Unit = {}
@@ -454,8 +461,8 @@ fun CreateWishlistDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(name) }) {
-                Text("Create")
+            Button(onClick = { onConfirm(name) }, enabled = !isLoading) {
+                Text(if (isLoading) "Creating…" else "Create")
             }
         },
         dismissButton = {

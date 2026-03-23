@@ -3,6 +3,7 @@ package dev.avadhut.wist.route
 import dev.avadhut.wist.config.userId
 import dev.avadhut.wist.core.dto.CreateWishlistRequest
 import dev.avadhut.wist.core.dto.UpdateWishlistRequest
+import dev.avadhut.wist.repository.WishlistNameConflictException
 import dev.avadhut.wist.repository.WishlistRepository
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
@@ -35,8 +36,15 @@ fun Route.wishlistRoutes() {
                     return@post
                 }
 
-                val wishlist = WishlistRepository.createWishlist(request.name, userId)
-                call.respond(HttpStatusCode.Created, wishlist)
+                try {
+                    val wishlist = WishlistRepository.createWishlist(request.name, userId)
+                    call.respond(HttpStatusCode.Created, wishlist)
+                } catch (e: WishlistNameConflictException) {
+                    call.respond(
+                        HttpStatusCode.Conflict,
+                        mapOf("error" to "A wishlist named '${request.name}' already exists")
+                    )
+                }
             }
 
             // Get single wishlist
@@ -72,13 +80,22 @@ fun Route.wishlistRoutes() {
                     return@put
                 }
 
-                val updated = WishlistRepository.updateWishlist(id, request.name, userId)
-                if (!updated) {
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Wishlist not found"))
-                    return@put
+                try {
+                    val updated = WishlistRepository.updateWishlist(id, request.name, userId)
+                    if (!updated) {
+                        call.respond(
+                            HttpStatusCode.NotFound,
+                            mapOf("error" to "Wishlist not found")
+                        )
+                        return@put
+                    }
+                    call.respond(mapOf("success" to true))
+                } catch (e: WishlistNameConflictException) {
+                    call.respond(
+                        HttpStatusCode.Conflict,
+                        mapOf("error" to "A wishlist named '${request.name}' already exists")
+                    )
                 }
-
-                call.respond(mapOf("success" to true))
             }
 
             // Delete wishlist (soft delete)

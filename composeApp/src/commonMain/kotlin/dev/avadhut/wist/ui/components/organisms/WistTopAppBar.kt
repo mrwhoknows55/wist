@@ -13,6 +13,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import dev.avadhut.wist.ui.components.atoms.AppLogoText
@@ -87,10 +88,11 @@ fun WistDetailTopAppBar(
             )
         },
         actions = actions,
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = BackgroundPrimary,
-            titleContentColor = TextPrimary,
+            scrolledContainerColor = Color.Unspecified,
             navigationIconContentColor = TextPrimary,
+            titleContentColor = TextPrimary,
             actionIconContentColor = TextPrimary
         )
     )

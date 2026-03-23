@@ -35,6 +35,13 @@ object DatabaseFactory {
         // Create schema
         transaction {
             SchemaUtils.create(Users, Wishlists, WishlistItems, ProductCacheTable)
+            exec(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_wishlists_user_name_active
+                ON wishlists (user_id, name)
+                WHERE deleted_at IS NULL
+                """.trimIndent()
+            )
         }
         logger.info("Database initialized and schema created")
     }
