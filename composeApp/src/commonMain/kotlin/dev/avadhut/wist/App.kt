@@ -49,7 +49,7 @@ import kotlin.time.Instant
 @Composable
 fun App(
     apiClient: WistApiClient = remember {
-        WistApiClient("http://localhost:8080")
+        WistApiClient()
     },
     tokenStorage: TokenStorage = remember { InMemoryTokenStorage() }
 ) {
