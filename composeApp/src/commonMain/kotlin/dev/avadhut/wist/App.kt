@@ -48,7 +48,11 @@ import kotlin.time.Instant
 
 @Composable
 fun App(
-    apiClient: WistApiClient = remember { WistApiClient() },
+    apiClient: WistApiClient = remember {
+        WistApiClient(
+            "localhost:8080"
+        )
+    },
     tokenStorage: TokenStorage = remember { InMemoryTokenStorage() }
 ) {
     WistTheme {
@@ -109,7 +113,7 @@ fun App(
             transitionSpec = wistNavForwardTransition,
             popTransitionSpec = wistNavPopTransition,
             predictivePopTransitionSpec = wistNavPredictivePopTransition,
-            entryProvider = entryProvider<NavKey> {
+            entryProvider = entryProvider {
                 entry<LoginRoute> {
                     LoginScreen(
                         apiClient = apiClient,

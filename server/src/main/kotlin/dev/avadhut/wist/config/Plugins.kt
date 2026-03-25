@@ -10,6 +10,7 @@ import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
 import kotlinx.serialization.json.Json
 
 data class PluginServices(
@@ -24,6 +25,20 @@ fun Application.configurePlugins(): PluginServices {
             isLenient = true
             ignoreUnknownKeys = true
         })
+    }
+
+    // Install CORS
+    install(CORS) {
+        allowHost("*.avadhut.dev")
+        allowHost("localhost")
+        allowHeader("Content-Type")
+        allowHeader("Authorization")
+        allowMethod(io.ktor.http.HttpMethod.Get)
+        allowMethod(io.ktor.http.HttpMethod.Post)
+        allowMethod(io.ktor.http.HttpMethod.Put)
+        allowMethod(io.ktor.http.HttpMethod.Delete)
+        allowMethod(io.ktor.http.HttpMethod.Options)
+        allowCredentials = true
     }
 
     // Initialize Database
