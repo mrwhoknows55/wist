@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -62,7 +64,11 @@ fun SourceIcon(
     showLabel: Boolean = false
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically, modifier = modifier
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = if (showLabel) modifier.clearAndSetSemantics {
+            contentDescription = source.displayName
+        }
+        else modifier.clearAndSetSemantics {}
     ) {
         if (source == KnownSource.GENERIC) {
             // Show globe icon for generic sources

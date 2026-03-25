@@ -19,6 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.ui.components.atoms.KnownSource
@@ -64,8 +68,15 @@ fun WishlistCard(
     data: WishlistDisplayData, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().background(BackgroundCard).clickable(onClick = onClick)
-            .padding(WistDimensions.SpacingLg), verticalAlignment = Alignment.Top
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                role = Role.Button; contentDescription = "${data.name} wishlist"
+            }
+            .background(BackgroundCard)
+            .clickable(onClick = onClick)
+            .padding(WistDimensions.SpacingLg),
+        verticalAlignment = Alignment.Top
     ) {
         // Left side: Info
         Column(
@@ -152,11 +163,19 @@ fun WishlistListItem(
         modifier = modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(2.dp).border(
-                width = WistDimensions.DividerThickness,
-                color = BorderDefault,
-                shape = RectangleShape
-            ).clickable(onClick = onClick).padding(WistDimensions.SpacingLg),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(2.dp)
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button; contentDescription = "${data.name} wishlist"
+                }
+                .border(
+                    width = WistDimensions.DividerThickness,
+                    color = BorderDefault,
+                    shape = RectangleShape
+                )
+                .clickable(onClick = onClick)
+                .padding(WistDimensions.SpacingLg),
             verticalAlignment = Alignment.Top,
         ) {
             // Left side: Info
@@ -218,7 +237,12 @@ fun WishlistCardBordered(
     data: WishlistDisplayData, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().clickable(onClick = onClick)
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                role = Role.Button; contentDescription = "${data.name} wishlist"
+            }
+            .clickable(onClick = onClick)
     ) {
         // Left border accent
         Box(

@@ -25,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import coil3.compose.AsyncImage
@@ -74,6 +78,14 @@ fun ProductListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    role = Role.Button
+                    contentDescription = buildString {
+                        append(data.title)
+                        if (data.price != null) append(", ${data.price} ${data.currencyCode}")
+                        append(", from ${data.source.displayName}")
+                    }
+                }
                 .border(
                     width = WistDimensions.DividerThickness,
                     color = BorderDefault
