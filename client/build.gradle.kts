@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 
 import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
@@ -13,6 +13,8 @@ plugins {
 group = "dev.avadhut.wist"
 
 kotlin {
+    jvmToolchain(21)
+
     jvm {
         mainRun {
             mainClass.set("dev.avadhut.wist.client.MainKt")
@@ -23,18 +25,15 @@ kotlin {
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
 
     js {
         browser()
-        binaries.executable()
     }
 
-    @OptIn(ExperimentalWasmDsl::class) wasmJs {
+    wasmJs {
         browser()
-        binaries.executable()
     }
 
     sourceSets {
@@ -62,6 +61,14 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
 
+        jsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
+        wasmJsMain.dependencies {
+            implementation(libs.ktor.client.js)
+        }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.datetime)
@@ -70,8 +77,5 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
-    }
-    kotlin {
-        jvmToolchain(21)
     }
 }

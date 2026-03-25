@@ -31,6 +31,7 @@ fun Application.configurePlugins(): PluginServices {
     install(CORS) {
         allowHost("*.avadhut.dev")
         allowHost("localhost")
+        allowHost("localhost:3000")
         allowHeader("Content-Type")
         allowHeader("Authorization")
         allowMethod(io.ktor.http.HttpMethod.Get)

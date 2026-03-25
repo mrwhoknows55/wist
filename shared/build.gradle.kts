@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -7,6 +9,8 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(21)
+
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -21,7 +25,7 @@ kotlin {
         browser()
     }
 
-    @OptIn(ExperimentalWasmDsl::class) wasmJs {
+    wasmJs {
         browser()
     }
 
@@ -32,10 +36,6 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-    }
-
-    kotlin {
-        jvmToolchain(21)
     }
 }
 

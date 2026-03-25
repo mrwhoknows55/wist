@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 import java.util.Properties
 
 val wistLocalProperties = Properties().apply {
@@ -23,6 +26,7 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(21)
 
     androidTarget {
         compilerOptions {
@@ -42,12 +46,26 @@ kotlin {
     jvm()
 
     js {
-        browser()
+        browser {
+            runTask {
+                devServerProperty =
+                    devServerProperty.orNull?.copy(port = 3000) ?: KotlinWebpackConfig.DevServer(
+                        port = 3000
+                    )
+            }
+        }
         binaries.executable()
     }
 
-    @OptIn(ExperimentalWasmDsl::class) wasmJs {
-        browser()
+    wasmJs {
+        browser {
+            runTask {
+                devServerProperty =
+                    devServerProperty.orNull?.copy(port = 3000) ?: KotlinWebpackConfig.DevServer(
+                        port = 3000
+                    )
+            }
+        }
         binaries.executable()
     }
 
@@ -89,10 +107,6 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
     }
-
-    kotlin {
-        jvmToolchain(21)
-    }
 }
 
 android {
@@ -118,7 +132,10 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("debug")
         }
     }

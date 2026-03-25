@@ -61,17 +61,25 @@ dependencies {
     testImplementation(libs.h2)
 }
 
-tasks.register("downloadClearUrlsRules") {
-    val outputFile = file("src/main/resources/clearurls-rules.json")
-    outputs.file(outputFile)
-    notCompatibleWithConfigurationCache("Downloads file from network")
-    doLast {
-        URI("https://rules2.clearurls.xyz/data.minify.json")
-            .toURL().openStream().use { input ->
-                outputFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
+abstract class DownloadFileTask : DefaultTask() {
+    @get:Input
+    abstract val downloadUrl: Property<String>
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun download() {
+        URI(downloadUrl.get()).toURL().openStream().use { input ->
+            outputFile.asFile.get().outputStream().use { output ->
+                input.copyTo(output)
             }
+        }
     }
+}
+
+tasks.register<DownloadFileTask>("downloadClearUrlsRules") {
+    downloadUrl.set("https://rules2.clearurls.xyz/data.minify.json")
+    outputFile.set(layout.projectDirectory.file("src/main/resources/clearurls-rules.json"))
 }
 tasks.named("processResources") { dependsOn("downloadClearUrlsRules") }

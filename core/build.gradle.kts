@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 
 plugins {
@@ -8,18 +10,17 @@ plugins {
 group = "dev.avadhut.wist"
 
 kotlin {
+    jvmToolchain(21)
+
     jvm()
-    iosX64()
     iosArm64()
     iosSimulatorArm64()
     js {
         browser()
-        binaries.executable()
     }
 
-    @OptIn(ExperimentalWasmDsl::class) wasmJs {
+    wasmJs {
         browser()
-        binaries.executable()
     }
     sourceSets {
         commonMain.dependencies {
@@ -30,9 +31,5 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-    }
-
-    kotlin {
-        jvmToolchain(21)
     }
 }
