@@ -8,13 +8,14 @@ import dev.avadhut.wist.repository.User
 import dev.avadhut.wist.repository.UserRepository
 import java.util.Date
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.days
 
 class AuthService(
     private val jwtSecret: String,
     private val jwtIssuer: String,
     private val jwtAudience: String,
-    private val jwtExpirationMs: Duration = 24.hours
+    // TODO: implement refresh token mechanism and reduce this back to a short-lived token
+    private val jwtExpirationMs: Duration = 7.days
 ) {
     sealed class AuthFailure(message: String) : Exception(message) {
         class UserNotFound : AuthFailure("User not found")

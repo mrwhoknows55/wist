@@ -66,7 +66,7 @@ object WistDimensions {
     val ThumbnailLarge = 100.dp
 
     /** Product detail hero image height */
-    val ProductImageHeight = 200.dp
+    val ProductImageHeight = 260.dp
 
 
     // SOURCE ICONS

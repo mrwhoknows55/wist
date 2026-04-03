@@ -10,6 +10,10 @@ interface TokenStorage {
     fun getCacheScopeUserId(): Int? = null
 
     fun clearCacheScopeUserId() {}
+
+    fun saveSecondOpinionDismissed(dismissed: Boolean) {}
+    fun isSecondOpinionDismissed(): Boolean = false
+    fun clearSecondOpinionDismissed() {}
 }
 
 class InMemoryTokenStorage : TokenStorage {

@@ -6,6 +6,7 @@ import androidx.core.content.edit
 
 private const val TAG = "WistTokenStorage"
 private const val KEY_CACHE_SCOPE_USER_ID = "cache_scope_user_id"
+private const val KEY_SECOND_OPINION_DISMISSED = "second_opinion_dismissed"
 
 class SharedPrefsTokenStorage(context: Context) : TokenStorage {
     private val prefs = context.getSharedPreferences("wist_auth", Context.MODE_PRIVATE)
@@ -22,7 +23,12 @@ class SharedPrefsTokenStorage(context: Context) : TokenStorage {
     }
 
     override fun clearToken() {
-        prefs.edit { remove("token").remove(KEY_CACHE_SCOPE_USER_ID).commit() }
+        prefs.edit {
+            remove("token")
+            remove(KEY_CACHE_SCOPE_USER_ID)
+            remove(KEY_SECOND_OPINION_DISMISSED)
+            commit()
+        }
         Log.i(TAG, "clearToken committed")
     }
 
@@ -38,5 +44,16 @@ class SharedPrefsTokenStorage(context: Context) : TokenStorage {
 
     override fun clearCacheScopeUserId() {
         prefs.edit { remove(KEY_CACHE_SCOPE_USER_ID) }
+    }
+
+    override fun saveSecondOpinionDismissed(dismissed: Boolean) {
+        prefs.edit { putBoolean(KEY_SECOND_OPINION_DISMISSED, dismissed) }
+    }
+
+    override fun isSecondOpinionDismissed(): Boolean =
+        prefs.getBoolean(KEY_SECOND_OPINION_DISMISSED, false)
+
+    override fun clearSecondOpinionDismissed() {
+        prefs.edit { remove(KEY_SECOND_OPINION_DISMISSED) }
     }
 }

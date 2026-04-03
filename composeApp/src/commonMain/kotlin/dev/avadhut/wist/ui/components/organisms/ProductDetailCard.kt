@@ -2,6 +2,7 @@ package dev.avadhut.wist.ui.components.organisms
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,12 +20,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -101,6 +104,10 @@ fun ProductDetailCard(
     onSourceClick: () -> Unit,
     onNotifyClick: () -> Unit,
     onFindBestPriceClick: () -> Unit,
+    onRedditClick: () -> Unit = {},
+    onComingSoonTap: () -> Unit = {},
+    isSecondOpinionDismissed: Boolean = false,
+    onDismissSecondOpinion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -232,38 +239,28 @@ fun ProductDetailCard(
                 )
             }
 
-            // Price History Section (Placeholder)
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
+            // Reddit Reviews Section
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
             HorizontalDivider(color = DividerColor)
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+            RedditReviewsSection(onRedditClick = onRedditClick)
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
-            PriceHistorySection()
-
-            // Reddit Reviews Section (Placeholder)
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
+            // Price History Section (Coming Soon)
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
             HorizontalDivider(color = DividerColor)
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+            PriceHistorySection(onComingSoonTap = onComingSoonTap)
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
-            RedditReviewsSection()
-
-            // Second Opinion Section
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
-            HorizontalDivider(color = DividerColor)
-
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
-
-            SecondOpinionSection()
+            // Second Opinion Section (Coming Soon, dismissable)
+            if (!isSecondOpinionDismissed) {
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+                HorizontalDivider(color = DividerColor)
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+                SecondOpinionSection(
+                    onComingSoonTap = onComingSoonTap,
+                    onDismiss = onDismissSecondOpinion
+                )
+            }
 
             Spacer(modifier = Modifier.height(
                 WistDimensions.SpacingXl))
@@ -275,13 +272,13 @@ fun ProductDetailCard(
             ) {
                 WistButton(
                     text = "Notify Me",
-                    onClick = onNotifyClick,
+                    onClick = { onNotifyClick(); onComingSoonTap() },
                     style = WistButtonStyle.SECONDARY,
                     modifier = Modifier.weight(1f)
                 )
                 WistButton(
                     text = "Find me best price",
-                    onClick = onFindBestPriceClick,
+                    onClick = { onFindBestPriceClick(); onComingSoonTap() },
                     style = WistButtonStyle.SECONDARY,
                     modifier = Modifier.weight(1f)
                 )
@@ -309,7 +306,7 @@ private fun ProductDetailImage(
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -372,6 +369,7 @@ private fun BuySignalIndicator(
  */
 @Composable
 private fun PriceHistorySection(
+    onComingSoonTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -390,7 +388,8 @@ private fun PriceHistorySection(
                 .fillMaxWidth()
                 .height(100.dp)
                 .clip(RoundedCornerShape(WistDimensions.CardRadius))
-                .background(BackgroundCard),
+                .background(BackgroundCard)
+                .clickable { onComingSoonTap() },
             contentAlignment = Alignment.Center
         ) {
             // Simple wave line placeholder
@@ -425,6 +424,7 @@ private fun PriceHistorySection(
  */
 @Composable
 private fun RedditReviewsSection(
+    onRedditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -432,6 +432,7 @@ private fun RedditReviewsSection(
             .fillMaxWidth()
             .clip(RoundedCornerShape(WistDimensions.CardRadius))
             .background(BackgroundCard)
+            .clickable { onRedditClick() }
             .padding(WistDimensions.SpacingLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -481,9 +482,13 @@ private fun RedditReviewsSection(
  */
 @Composable
 private fun SecondOpinionSection(
+    onDismiss: () -> Unit,
+    onComingSoonTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier.clickable { onComingSoonTap() }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -495,18 +500,32 @@ private fun SecondOpinionSection(
                 color = TextSecondary
             )
 
-            // Progress indicator placeholder
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(TextDisabled)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Progress indicator placeholder
+                Box(
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(TextDisabled)
+                )
+                Spacer(modifier = Modifier.width(WistDimensions.SpacingSm))
+                // Dismiss button
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Dismiss second opinion",
+                    tint = TextSecondary,
+                    modifier = Modifier
+                        .size(WistDimensions.IconSizeMedium)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onDismiss() }
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingSm))
+        Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
 
         Text(
             text = "What works?",

@@ -199,6 +199,10 @@ fun App(
                         onBack = { backStack.removeLast() },
                         onOpenWebView = { url ->
                             backStack.add(InAppWebViewRoute(url = url))
+                        },
+                        isSecondOpinionDismissed = tokenStorage.isSecondOpinionDismissed(),
+                        onDismissSecondOpinion = {
+                            tokenStorage.saveSecondOpinionDismissed(true)
                         }
                     )
                 }
