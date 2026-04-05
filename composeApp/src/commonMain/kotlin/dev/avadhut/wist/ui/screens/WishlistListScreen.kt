@@ -242,8 +242,8 @@ fun WishlistListScreen(
                                         dateLabel = dateLabel,
                                         productImages = wishlist.thumbnailUrls.filter { it.isNotBlank() },
                                         sources = emptyList(),
-                                        priceMin = 0.0,
-                                        priceMax = 0.0
+                                        priceMin = wishlist.priceMin,
+                                        priceMax = wishlist.priceMax
                                     ),
                                     onClick = { onWishlistClick(wishlist.id) },
                                     onDeleteClick = { wishlistToDelete = wishlist }

@@ -85,6 +85,12 @@ fun PriceRangeTag(
     currencyCode: String = "USD",
     modifier: Modifier = Modifier
 ) {
+
+    if (minPrice.isNaN() || maxPrice.isNaN()) {
+        Box(modifier)
+        return
+    }
+
     val formattedMin = formatCurrency(
         price = minPrice,
         currencyCode = currencyCode,

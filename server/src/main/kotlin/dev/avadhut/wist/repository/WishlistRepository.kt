@@ -33,8 +33,16 @@ object WishlistRepository {
 
         val wishlistIds = wishlists.map { it.id }
         val thumbnailsByWishlistId = getThumbnailsByWishlistIds(wishlistIds)
+        val priceRangesByWishlistId = getPriceRangesByWishlistIds(wishlistIds)
 
-        wishlists.map { it.copy(thumbnailUrls = thumbnailsByWishlistId[it.id].orEmpty()) }
+        wishlists.map {
+            val (priceMin, priceMax) = priceRangesByWishlistId[it.id] ?: Pair(null, null)
+            it.copy(
+                thumbnailUrls = thumbnailsByWishlistId[it.id].orEmpty(),
+                priceMin = priceMin,
+                priceMax = priceMax
+            )
+        }
     }
 
     /**
@@ -42,7 +50,15 @@ object WishlistRepository {
      */
     fun getWishlistById(id: Int): WishlistDto? = transaction {
         Wishlists.selectAll().where { Wishlists.id eq id }.map { it.toWishlistDto() }.singleOrNull()
-            ?.let { it.copy(thumbnailUrls = getThumbnailUrls(it.id)) }
+            ?.let { wl ->
+                val (priceMin, priceMax) = getPriceRangesByWishlistIds(listOf(wl.id))[wl.id]
+                    ?: Pair(null, null)
+                wl.copy(
+                    thumbnailUrls = getThumbnailUrls(wl.id),
+                    priceMin = priceMin,
+                    priceMax = priceMax
+                )
+            }
     }
 
 
@@ -53,7 +69,15 @@ object WishlistRepository {
         Wishlists.selectAll().where {
             (Wishlists.id eq id) and (Wishlists.userId eq userId) and Wishlists.deletedAt.isNull()
         }.map { it.toWishlistDto() }.singleOrNull()
-            ?.let { it.copy(thumbnailUrls = getThumbnailUrls(it.id)) }
+            ?.let { wl ->
+                val (priceMin, priceMax) = getPriceRangesByWishlistIds(listOf(wl.id))[wl.id]
+                    ?: Pair(null, null)
+                wl.copy(
+                    thumbnailUrls = getThumbnailUrls(wl.id),
+                    priceMin = priceMin,
+                    priceMax = priceMax
+                )
+            }
     }
 
     private fun activeWishlistWithNameExists(
@@ -117,6 +141,18 @@ object WishlistRepository {
             it[updatedAt] = currentLocalDateTime()
         }
         updated > 0
+    }
+
+    private fun getPriceRangesByWishlistIds(wishlistIds: List<Int>): Map<Int, Pair<Double?, Double?>> {
+        if (wishlistIds.isEmpty()) return emptyMap()
+        return WishlistItems.selectAll()
+            .where { (WishlistItems.wishlistId inList wishlistIds) and WishlistItems.price.isNotNull() }
+            .groupBy { it[WishlistItems.wishlistId] }
+            .mapValues { (_, rows) ->
+                val prices = rows.mapNotNull { it[WishlistItems.price] }
+                if (prices.isEmpty()) Pair(null, null)
+                else Pair(prices.min(), prices.max())
+            }
     }
 
     private fun getThumbnailUrls(wishlistId: Int): List<String> =

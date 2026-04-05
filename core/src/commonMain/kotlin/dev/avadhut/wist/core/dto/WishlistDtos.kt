@@ -12,7 +12,9 @@ data class WishlistDto(
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
     val deletedAt: LocalDateTime? = null,
-    val thumbnailUrls: List<String> = emptyList()
+    val thumbnailUrls: List<String> = emptyList(),
+    val priceMin: Double = Double.NaN,
+    val priceMax: Double = Double.NaN
 )
 
 @Serializable
@@ -58,13 +60,3 @@ data class UpdateItemRequest(
     val retailerDomain: String?
 )
 
-// Common response types
-@Serializable
-data class ApiErrorResponse(
-    val error: String
-)
-
-@Serializable
-data class SuccessResponse(
-    val success: Boolean
-)

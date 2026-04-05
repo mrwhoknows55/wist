@@ -22,6 +22,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxDefaults
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
@@ -86,17 +87,13 @@ fun ProductListItem(
     data: ProductListItemData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showDivider: Boolean = true,
     onDeleteClick: (() -> Unit)? = null
 ) {
     val swipeTrigger = remember { mutableStateOf(0) }
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart && onDeleteClick != null) {
-                swipeTrigger.value++
-            }
-            false // always spring back
-        })
+        initialValue = SwipeToDismissBoxValue.Settled,
+        positionalThreshold = SwipeToDismissBoxDefaults.positionalThreshold
+    )
 
     LaunchedEffect(swipeTrigger.value) {
         if (swipeTrigger.value > 0) {

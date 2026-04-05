@@ -60,8 +60,8 @@ data class WishlistDisplayData(
     val dateLabel: String,
     val productImages: List<String?>,
     val sources: List<KnownSource>,
-    val priceMin: Double,
-    val priceMax: Double,
+    val priceMin: Double = Double.NaN,
+    val priceMax: Double = Double.NaN,
     val currencyCode: String = "USD"
 )
 
@@ -135,9 +135,13 @@ fun WishlistCard(
             )
 
             // Price range
-            PriceRangeTag(
-                minPrice = data.priceMin, maxPrice = data.priceMax, currencyCode = data.currencyCode
-            )
+            if (data.priceMin != null && data.priceMax != null) {
+                PriceRangeTag(
+                    minPrice = data.priceMin,
+                    maxPrice = data.priceMax,
+                    currencyCode = data.currencyCode
+                )
+            }
         }
 
         Spacer(
