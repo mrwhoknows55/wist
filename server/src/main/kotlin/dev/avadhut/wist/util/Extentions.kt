@@ -37,3 +37,5 @@ fun ApplicationCall.getIpAddress(): String {
     val ip = realIp ?: forwardedFor ?: remoteAddress
     return ip
 }
+
+fun Double?.toDouble(): Double = this ?: Double.NaN

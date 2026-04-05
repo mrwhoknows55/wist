@@ -4,6 +4,7 @@ import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.database.WishlistItems
 import dev.avadhut.wist.database.Wishlists
 import dev.avadhut.wist.util.currentLocalDateTime
+import dev.avadhut.wist.util.toDouble
 import org.jetbrains.exposed.v1.core.Op
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -36,11 +37,13 @@ object WishlistRepository {
         val priceRangesByWishlistId = getPriceRangesByWishlistIds(wishlistIds)
 
         wishlists.map {
-            val (priceMin, priceMax) = priceRangesByWishlistId[it.id] ?: Pair(null, null)
+            val (priceMin, priceMax) = priceRangesByWishlistId[it.id] ?: Pair(
+                Double.NaN, Double.NaN
+            )
             it.copy(
                 thumbnailUrls = thumbnailsByWishlistId[it.id].orEmpty(),
-                priceMin = priceMin,
-                priceMax = priceMax
+                priceMin = priceMin.toDouble(),
+                priceMax = priceMax.toDouble()
             )
         }
     }
@@ -52,11 +55,11 @@ object WishlistRepository {
         Wishlists.selectAll().where { Wishlists.id eq id }.map { it.toWishlistDto() }.singleOrNull()
             ?.let { wl ->
                 val (priceMin, priceMax) = getPriceRangesByWishlistIds(listOf(wl.id))[wl.id]
-                    ?: Pair(null, null)
+                    ?: Pair(Double.NaN, Double.NaN)
                 wl.copy(
                     thumbnailUrls = getThumbnailUrls(wl.id),
-                    priceMin = priceMin,
-                    priceMax = priceMax
+                    priceMin = priceMin.toDouble(),
+                    priceMax = priceMax.toDouble()
                 )
             }
     }
@@ -74,8 +77,8 @@ object WishlistRepository {
                     ?: Pair(null, null)
                 wl.copy(
                     thumbnailUrls = getThumbnailUrls(wl.id),
-                    priceMin = priceMin,
-                    priceMax = priceMax
+                    priceMin = priceMin.toDouble(),
+                    priceMax = priceMax.toDouble()
                 )
             }
     }

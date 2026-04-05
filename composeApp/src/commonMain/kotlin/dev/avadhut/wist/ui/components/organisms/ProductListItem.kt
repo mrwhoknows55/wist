@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxDefaults
@@ -53,6 +54,7 @@ import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.WistDimensions
 import dev.avadhut.wist.ui.theme.WistTheme
+import dev.avadhut.wist.util.isTouchPlatform
 import kotlinx.coroutines.flow.first
 import kotlin.math.abs
 
@@ -91,7 +93,12 @@ fun ProductListItem(
 ) {
     val swipeTrigger = remember { mutableStateOf(0) }
     val dismissState = rememberSwipeToDismissBoxState(
-        initialValue = SwipeToDismissBoxValue.Settled,
+        initialValue = SwipeToDismissBoxValue.Settled, confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                swipeTrigger.value++
+            }
+            false
+        },
         positionalThreshold = SwipeToDismissBoxDefaults.positionalThreshold
     )
 
@@ -103,24 +110,7 @@ fun ProductListItem(
         }
     }
 
-    SwipeToDismissBox(
-        state = dismissState,
-        modifier = modifier,
-        enableDismissFromStartToEnd = false,
-        enableDismissFromEndToStart = onDeleteClick != null,
-        backgroundContent = {
-            Box(
-                modifier = Modifier.fillMaxSize().background(AlertRed),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.White,
-                    modifier = Modifier.padding(end = WistDimensions.SpacingXl)
-                )
-            }
-        }) {
+    val rowContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
         ) {
@@ -134,8 +124,8 @@ fun ProductListItem(
                     }
                 }.border(width = WistDimensions.DividerThickness, color = BorderDefault)
                     .clickable(onClick = onClick).padding(
-                    horizontal = WistDimensions.ScreenPaddingHorizontal,
-                    vertical = WistDimensions.SpacingLg
+                        horizontal = WistDimensions.ScreenPaddingHorizontal,
+                        vertical = WistDimensions.SpacingLg
                     ), verticalAlignment = Alignment.CenterVertically
             ) {
                 ProductListItemImage(
@@ -166,8 +156,41 @@ fun ProductListItem(
                     Spacer(modifier = Modifier.height(WistDimensions.SpacingXs))
                     SourceIcon(source = data.source, showLabel = true)
                 }
+                if (!isTouchPlatform && onDeleteClick != null) {
+                    IconButton(onClick = onDeleteClick) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Delete",
+                            tint = AlertRed
+                        )
+                    }
+                }
             }
         }
+    }
+
+    if (isTouchPlatform && onDeleteClick != null) {
+        SwipeToDismissBox(
+            state = dismissState,
+            modifier = modifier,
+            enableDismissFromStartToEnd = false,
+            enableDismissFromEndToStart = true,
+            backgroundContent = {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(AlertRed),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.White,
+                        modifier = Modifier.padding(end = WistDimensions.SpacingXl)
+                    )
+                }
+            },
+            content = { rowContent() })
+    } else {
+        Box(modifier = modifier) { rowContent() }
     }
 }
 
