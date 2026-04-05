@@ -17,13 +17,23 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -35,12 +45,15 @@ import coil3.compose.AsyncImage
 import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.PriceTag
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
+import dev.avadhut.wist.ui.theme.AlertRed
 import dev.avadhut.wist.ui.theme.BackgroundCard
 import dev.avadhut.wist.ui.theme.BorderDefault
 import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.WistDimensions
 import dev.avadhut.wist.ui.theme.WistTheme
+import kotlinx.coroutines.flow.first
+import kotlin.math.abs
 
 /**
  * Data class representing a product for list display
@@ -67,86 +80,97 @@ data class ProductListItemData(
  * @param onClick Click handler
  * @param modifier Modifier for customization
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductListItem(
     data: ProductListItemData,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showDivider: Boolean = true
+    showDivider: Boolean = true,
+    onDeleteClick: (() -> Unit)? = null
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics(mergeDescendants = true) {
+    val swipeTrigger = remember { mutableStateOf(0) }
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart && onDeleteClick != null) {
+                swipeTrigger.value++
+            }
+            false // always spring back
+        })
+
+    LaunchedEffect(swipeTrigger.value) {
+        if (swipeTrigger.value > 0) {
+            // Wait for spring-back animation to complete before opening dialog
+            snapshotFlow { dismissState.requireOffset() }.first { abs(it) < 1f }
+            onDeleteClick?.invoke()
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier,
+        enableDismissFromStartToEnd = false,
+        enableDismissFromEndToStart = onDeleteClick != null,
+        backgroundContent = {
+            Box(
+                modifier = Modifier.fillMaxSize().background(AlertRed),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.White,
+                    modifier = Modifier.padding(end = WistDimensions.SpacingXl)
+                )
+            }
+        }) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {
                     role = Role.Button
                     contentDescription = buildString {
                         append(data.title)
                         if (data.price != null) append(", ${data.price} ${data.currencyCode}")
                         append(", from ${data.source.displayName}")
                     }
-                }
-                .border(
-                    width = WistDimensions.DividerThickness,
-                    color = BorderDefault
-                )
-                .clickable(onClick = onClick)
-                .padding(
+                }.border(width = WistDimensions.DividerThickness, color = BorderDefault)
+                    .clickable(onClick = onClick).padding(
                     horizontal = WistDimensions.ScreenPaddingHorizontal,
                     vertical = WistDimensions.SpacingLg
-                ),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-        // Product Image
-        ProductListItemImage(
-            imageUrl = data.imageUrl,
-            modifier = Modifier.size(
-                WistDimensions.ThumbnailLarge
-            )
-        )
-
-        Spacer(modifier = Modifier.width(
-            WistDimensions.SpacingLg)
-        )
-
-        // Product Info
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXs)
-        ) {
-            // Title
-            Text(
-                text = data.title,
-                style = MaterialTheme.typography.titleLarge,
-                color = TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            if (data.price != null) {
-                PriceTag(
-                    price = data.price,
-                    currencyCode = data.currencyCode
+                    ), verticalAlignment = Alignment.CenterVertically
+            ) {
+                ProductListItemImage(
+                    imageUrl = data.imageUrl,
+                    modifier = Modifier.size(WistDimensions.ThumbnailLarge)
                 )
-            } else {
-                Text(
-                    text = "—",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TextDisabled
-                )
+                Spacer(modifier = Modifier.width(WistDimensions.SpacingLg))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(WistDimensions.SpacingXs)
+                ) {
+                    Text(
+                        text = data.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (data.price != null) {
+                        PriceTag(price = data.price, currencyCode = data.currencyCode)
+                    } else {
+                        Text(
+                            text = "—",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextDisabled
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(WistDimensions.SpacingXs))
+                    SourceIcon(source = data.source, showLabel = true)
+                }
             }
-
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingXs)
-            )
-
-            // Source
-            SourceIcon(
-                source = data.source,
-                showLabel = true
-            )
         }
-    }
     }
 }
 

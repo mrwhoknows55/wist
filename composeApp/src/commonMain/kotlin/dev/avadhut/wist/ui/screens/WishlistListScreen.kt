@@ -2,6 +2,7 @@ package dev.avadhut.wist.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,13 +14,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -29,6 +35,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import dev.avadhut.wist.client.WistApiClient
+import dev.avadhut.wist.client.util.ApiException
 import dev.avadhut.wist.client.util.userVisibleMessage
 import dev.avadhut.wist.core.dto.WishlistDto
 import dev.avadhut.wist.ui.clipboard.readPlainTextOrNull
@@ -49,6 +57,7 @@ import dev.avadhut.wist.ui.components.atoms.KnownSource
 import dev.avadhut.wist.ui.components.atoms.SourceIcon
 import dev.avadhut.wist.ui.components.atoms.WistButton
 import dev.avadhut.wist.ui.components.atoms.WistButtonStyle
+import dev.avadhut.wist.ui.components.atoms.WistIconButton
 import dev.avadhut.wist.ui.components.molecules.HomeListLoadingContent
 import dev.avadhut.wist.ui.components.molecules.LoadErrorWithRetry
 import dev.avadhut.wist.ui.components.molecules.SearchInput
@@ -81,19 +90,27 @@ private fun wishlistCreatedAtLabel(createdAt: LocalDateTime): String =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistListScreen(
-    apiClient: WistApiClient, onWishlistClick: (Int) -> Unit
+    apiClient: WistApiClient,
+    onWishlistClick: (Int) -> Unit,
+    onLogout: () -> Unit = {},
+    isSecondOpinionDismissed: Boolean = false,
+    onDismissSecondOpinion: () -> Unit = {}
 ) {
     var wishlists by remember { mutableStateOf<List<WishlistDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showAddSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
     var isAddingItem by remember { mutableStateOf(false) }
     var addItemError by remember { mutableStateOf<String?>(null) }
     var createWishlistError by remember { mutableStateOf<String?>(null) }
     var isCreatingWishlist by remember { mutableStateOf(false) }
     var isPullRefreshing by remember { mutableStateOf(false) }
+    var wishlistToDelete by remember { mutableStateOf<WishlistDto?>(null) }
+    var isDeletingWishlist by remember { mutableStateOf(false) }
+    var secondOpinionDismissed by remember { mutableStateOf(isSecondOpinionDismissed) }
 
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboard.current
@@ -123,8 +140,10 @@ fun WishlistListScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        loadWishlists(forceRemote = apiClient.wishlistListForceRemoteForLaunch())
+    val wishlistListVersion by apiClient.wishlistListVersion.collectAsState()
+
+    LaunchedEffect(wishlistListVersion) {
+        loadWishlists(forceRemote = wishlistListVersion > 0 || apiClient.wishlistListForceRemoteForLaunch())
     }
 
     // Check clipboard when sheet opens
@@ -145,8 +164,15 @@ fun WishlistListScreen(
     }
 
     Scaffold(topBar = {
-        // Using Box to overlay title or custom AppBar
-        WistHomeTopAppBar() // Defaults to "Wist" logo, assuming it's okay or will be updated globally
+        WistHomeTopAppBar(
+            actions = {
+                WistIconButton(
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = "Log out",
+                    onClick = { showLogoutDialog = true }
+                )
+            }
+        )
     }, bottomBar = {
         BottomActionArea(
             primaryText = "Add product",
@@ -189,8 +215,15 @@ fun WishlistListScreen(
                             Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                         }
 
-                        item {
-                            SecondOpinionCard()
+                        if (!secondOpinionDismissed) {
+                            item {
+                                SecondOpinionCard(
+                                    onDismiss = {
+                                        secondOpinionDismissed = true
+                                        onDismissSecondOpinion()
+                                    }
+                                )
+                            }
                         }
 
                         if (wishlists.isEmpty()) {
@@ -211,7 +244,10 @@ fun WishlistListScreen(
                                         sources = emptyList(),
                                         priceMin = 0.0,
                                         priceMax = 0.0
-                                    ), onClick = { onWishlistClick(wishlist.id) })
+                                    ),
+                                    onClick = { onWishlistClick(wishlist.id) },
+                                    onDeleteClick = { wishlistToDelete = wishlist }
+                                )
                             }
                         }
 
@@ -222,6 +258,64 @@ fun WishlistListScreen(
                 }
             }
         }
+    }
+
+    // Logout confirm dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Log out?") },
+            text = { Text("You'll need to sign in again to access your wishlists.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showLogoutDialog = false
+                    onLogout()
+                }) { Text("Log out", color = AlertRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Delete wishlist confirm dialog
+    wishlistToDelete?.let { wishlist ->
+        AlertDialog(
+            onDismissRequest = { if (!isDeletingWishlist) wishlistToDelete = null },
+            title = { Text("Delete wishlist?") },
+            text = {
+                Text(
+                    "\"${wishlist.name}\" and all its items will be deleted.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            isDeletingWishlist = true
+                            apiClient.wishlists.deleteWishlist(wishlist.id)
+                                .onSuccess {
+                                    wishlistToDelete = null
+                                    loadWishlists(forceRemote = true)
+                                }
+                                .onFailure { e ->
+                                    println("[Wist] WishlistListScreen: deleteWishlist failed id=${wishlist.id} msg=${e.userVisibleMessage()}")
+                                }
+                            isDeletingWishlist = false
+                        }
+                    },
+                    enabled = !isDeletingWishlist
+                ) {
+                    Text(if (isDeletingWishlist) "Deleting…" else "Delete", color = AlertRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { wishlistToDelete = null }, enabled = !isDeletingWishlist) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showCreateDialog) {
@@ -300,9 +394,14 @@ fun WishlistListScreen(
                         if (hasFailure) break
                         apiClient.wishlistItems.addItemToWishlist(list.id, trimmedUrl)
                             .onFailure { e ->
-                                addItemError = e.userVisibleMessage("Failed to add item")
+                                val status = (e as? ApiException)?.httpStatusCode
+                                addItemError = when (status) {
+                                    502 -> "Couldn't read that product page. Check the URL is a direct product link and try again."
+                                    400 -> e.userVisibleMessage("Invalid URL — paste a direct product link.")
+                                    else -> e.userVisibleMessage("Failed to add item")
+                                }
                                 hasFailure = true
-                                println("[Wist] WishlistListScreen: addItem failed listId=${list.id} msg=${e.userVisibleMessage()}")
+                                println("[Wist] WishlistListScreen: addItem failed listId=${list.id} status=$status msg=${e.userVisibleMessage()}")
                             }
                     }
                     if (!hasFailure) {
@@ -323,7 +422,7 @@ fun WishlistListScreen(
 
 
 @Composable
-fun SecondOpinionCard() {
+fun SecondOpinionCard(onDismiss: (() -> Unit)? = null) {
     Box(
         modifier = Modifier.padding(2.dp).fillMaxWidth().background(
             brush = Brush.horizontalGradient(
@@ -331,9 +430,7 @@ fun SecondOpinionCard() {
             )
         ).height(140.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier.weight(0.6f).padding(WistDimensions.CardPadding).fillMaxSize(),
                 verticalArrangement = Arrangement.SpaceBetween
@@ -348,8 +445,6 @@ fun SecondOpinionCard() {
                         style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary)
                     )
                 }
-
-                // Small Get Started Button
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(Color.Transparent)
                         .border(1.dp, Color.White, RoundedCornerShape(4.dp))
@@ -361,15 +456,25 @@ fun SecondOpinionCard() {
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
-
             }
-            // Placeholder for gradient/image
             Box(
                 modifier = Modifier.weight(0.4f).fillMaxSize().background(
                     brush = Brush.radialGradient(
                         colors = listOf(Color(0xFF333333), Color.Transparent)
                     )
                 )
+            )
+        }
+        if (onDismiss != null) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Dismiss",
+                tint = TextSecondary,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(WistDimensions.SpacingSm)
+                    .size(WistDimensions.IconSizeMedium)
+                    .clickable { onDismiss() }
             )
         }
     }

@@ -259,6 +259,15 @@ fun AddLinkBottomSheetContent(
             isLoading = isLoading
         )
 
+        if (isLoading) {
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
+            Text(
+                text = "Hang tight, this may take up to 30 seconds…",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+
         if (!errorMessage.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(WistDimensions.SpacingMd))
             Text(

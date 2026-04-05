@@ -27,7 +27,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +54,7 @@ import dev.avadhut.wist.ui.theme.SuccessGreen
 import dev.avadhut.wist.ui.theme.TextDisabled
 import dev.avadhut.wist.ui.theme.TextPrimary
 import dev.avadhut.wist.ui.theme.TextSecondary
+import dev.avadhut.wist.ui.theme.WarningOrange
 import dev.avadhut.wist.ui.theme.WistDimensions
 import dev.avadhut.wist.ui.theme.WistTheme
 
@@ -79,25 +83,6 @@ data class ProductDetailData(
     val dateCreated: String? = null
 )
 
-/**
- * Product Detail Card - Rich detail view for a single product
- *
- * Displays:
- * - Large product image
- * - Title and source link
- * - Price tag
- * - Highlights section
- * - Buy signal indicator
- * - Price history graph placeholder
- * - Reddit reviews section placeholder
- * - Action buttons (Notify Me, Find best price)
- *
- * @param data Product detail data
- * @param onSourceClick Callback when source link is clicked
- * @param onNotifyClick Callback when Notify Me is clicked
- * @param onFindBestPriceClick Callback when Find best price is clicked
- * @param modifier Modifier for customization
- */
 @Composable
 fun ProductDetailCard(
     data: ProductDetailData,
@@ -110,6 +95,9 @@ fun ProductDetailCard(
     onDismissSecondOpinion: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Local state so the section hides immediately on dismiss without waiting for storage round-trip
+    var secondOpinionDismissed by remember { mutableStateOf(isSecondOpinionDismissed) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -126,11 +114,9 @@ fun ProductDetailCard(
 
         // Content
         Column(
-            modifier = Modifier.padding(
-                WistDimensions.ScreenPaddingHorizontal)
+            modifier = Modifier.padding(WistDimensions.ScreenPaddingHorizontal)
         ) {
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingLg))
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
 
             // Title
             Text(
@@ -150,8 +136,7 @@ fun ProductDetailCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingMd))
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingMd))
 
             // Price and Source Row
             Row(
@@ -164,57 +149,42 @@ fun ProductDetailCard(
                     currencyCode = data.currencyCode
                 )
 
-                // Source link
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onSourceClick() }
                 ) {
-                    SourceIcon(
-                        source = data.source,
-                        showLabel = true
-                    )
-                    Spacer(modifier = Modifier.width(
-                        WistDimensions.SpacingXs))
+                    SourceIcon(source = data.source, showLabel = true)
+                    Spacer(modifier = Modifier.width(WistDimensions.SpacingXs))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                         contentDescription = "Open in browser",
                         tint = TextSecondary,
-                        modifier = Modifier.size(
-                            WistDimensions.IconSizeSmall)
+                        modifier = Modifier.size(WistDimensions.IconSizeSmall)
                     )
                 }
             }
 
             // Highlights Section
             if (data.highlights.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingLg))
-
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                 HorizontalDivider(color = DividerColor)
-
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingLg))
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
 
                 Text(
                     text = "HIGHLIGHTS",
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary
                 )
-
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingSm))
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
 
                 data.highlights.forEach { highlight ->
-                    Row(
-                        modifier = Modifier.padding(vertical = WistDimensions.SpacingXxs)
-                    ) {
+                    Row(modifier = Modifier.padding(vertical = WistDimensions.SpacingXxs)) {
                         Text(
                             text = "•",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
-                        Spacer(modifier = Modifier.width(
-                            WistDimensions.SpacingSm))
+                        Spacer(modifier = Modifier.width(WistDimensions.SpacingSm))
                         Text(
                             text = highlight,
                             style = MaterialTheme.typography.bodyMedium,
@@ -226,20 +196,13 @@ fun ProductDetailCard(
 
             // Buy Signal Section
             if (data.buySignal != null) {
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingLg))
-
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                 HorizontalDivider(color = DividerColor)
-
-                Spacer(modifier = Modifier.height(
-                    WistDimensions.SpacingLg))
-
-                BuySignalIndicator(
-                    signal = data.buySignal
-                )
+                Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
+                BuySignalIndicator(signal = data.buySignal)
             }
 
-            // Reddit Reviews Section
+            // Reddit Reviews Section — above price history
             Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
             HorizontalDivider(color = DividerColor)
             Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
@@ -252,18 +215,20 @@ fun ProductDetailCard(
             PriceHistorySection(onComingSoonTap = onComingSoonTap)
 
             // Second Opinion Section (Coming Soon, dismissable)
-            if (!isSecondOpinionDismissed) {
+            if (!secondOpinionDismissed) {
                 Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                 HorizontalDivider(color = DividerColor)
                 Spacer(modifier = Modifier.height(WistDimensions.SpacingLg))
                 SecondOpinionSection(
                     onComingSoonTap = onComingSoonTap,
-                    onDismiss = onDismissSecondOpinion
+                    onDismiss = {
+                        secondOpinionDismissed = true
+                        onDismissSecondOpinion()
+                    }
                 )
             }
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingXl))
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
 
             // Action Buttons
             Row(
@@ -284,14 +249,13 @@ fun ProductDetailCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(
-                WistDimensions.SpacingXl))
+            Spacer(modifier = Modifier.height(WistDimensions.SpacingXl))
         }
     }
 }
 
 /**
- * Product Detail Image with placeholder
+ * Product Detail Image — uses ContentScale.Fit so the full product is always visible.
  */
 @Composable
 private fun ProductDetailImage(
@@ -306,7 +270,7 @@ private fun ProductDetailImage(
             AsyncImage(
                 model = imageUrl,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
         } else {
@@ -320,9 +284,6 @@ private fun ProductDetailImage(
     }
 }
 
-/**
- * Buy Signal Indicator
- */
 @Composable
 private fun BuySignalIndicator(
     signal: BuySignal,
@@ -339,9 +300,7 @@ private fun BuySignalIndicator(
             color = TextSecondary
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
@@ -353,8 +312,7 @@ private fun BuySignalIndicator(
                         }
                     )
             )
-            Spacer(modifier = Modifier.width(
-                WistDimensions.SpacingSm))
+            Spacer(modifier = Modifier.width(WistDimensions.SpacingSm))
             Text(
                 text = signal.label,
                 style = MaterialTheme.typography.bodyMedium,
@@ -365,7 +323,69 @@ private fun BuySignalIndicator(
 }
 
 /**
- * Price History Section (Placeholder)
+ * Reddit Reviews Section — tappable card that opens a Reddit search for the product.
+ */
+@Composable
+private fun RedditReviewsSection(
+    onRedditClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = "REDDIT REVIEWS",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextSecondary
+        )
+        Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(WistDimensions.CardRadius))
+                .background(BackgroundCard)
+                .clickable { onRedditClick() }
+                .padding(WistDimensions.SpacingLg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(SourceColors.Amazon),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "R",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.width(WistDimensions.SpacingMd))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Reddit Reviews",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "View what people are saying about this product on reddit.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                contentDescription = "Open",
+                tint = TextSecondary
+            )
+        }
+    }
+}
+
+/**
+ * Price History Section — placeholder with COMING SOON badge.
  */
 @Composable
 private fun PriceHistorySection(
@@ -373,16 +393,21 @@ private fun PriceHistorySection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = "PRICE HISTORY",
-            style = MaterialTheme.typography.labelMedium,
-            color = TextSecondary
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "PRICE HISTORY",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondary
+            )
+            ComingSoonBadge()
+        }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingMd))
+        Spacer(modifier = Modifier.height(WistDimensions.SpacingMd))
 
-        // Graph placeholder
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -392,7 +417,6 @@ private fun PriceHistorySection(
                 .clickable { onComingSoonTap() },
             contentAlignment = Alignment.Center
         ) {
-            // Simple wave line placeholder
             Text(
                 text = "📈 Price Graph",
                 style = MaterialTheme.typography.bodyMedium,
@@ -400,10 +424,8 @@ private fun PriceHistorySection(
             )
         }
 
-        Spacer(modifier = Modifier.height(
-            WistDimensions.SpacingSm))
+        Spacer(modifier = Modifier.height(WistDimensions.SpacingSm))
 
-        // Month labels
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -420,65 +442,7 @@ private fun PriceHistorySection(
 }
 
 /**
- * Reddit Reviews Section (Placeholder)
- */
-@Composable
-private fun RedditReviewsSection(
-    onRedditClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(WistDimensions.CardRadius))
-            .background(BackgroundCard)
-            .clickable { onRedditClick() }
-            .padding(WistDimensions.SpacingLg),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Reddit icon placeholder
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(SourceColors.Amazon),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "R",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary
-            )
-        }
-
-        Spacer(modifier = Modifier.width(
-            WistDimensions.SpacingMd))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = "Reddit Reviews",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary
-            )
-            Text(
-                text = "View what people are saying about this product on reddit.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
-            )
-        }
-
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = "Open",
-            tint = TextSecondary
-        )
-    }
-}
-
-/**
- * Second Opinion Section
+ * Second Opinion Section — dismissable, with COMING SOON badge.
  */
 @Composable
 private fun SecondOpinionSection(
@@ -486,9 +450,7 @@ private fun SecondOpinionSection(
     onComingSoonTap: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.clickable { onComingSoonTap() }
-    ) {
+    Column(modifier = modifier.clickable { onComingSoonTap() }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -501,16 +463,8 @@ private fun SecondOpinionSection(
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Progress indicator placeholder
-                Box(
-                    modifier = Modifier
-                        .width(40.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(TextDisabled)
-                )
+                ComingSoonBadge()
                 Spacer(modifier = Modifier.width(WistDimensions.SpacingSm))
-                // Dismiss button
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Dismiss second opinion",
@@ -536,6 +490,25 @@ private fun SecondOpinionSection(
             text = "What works?",
             style = MaterialTheme.typography.bodyMedium,
             color = TextPrimary
+        )
+    }
+}
+
+/**
+ * Small inline badge indicating a feature is not yet available.
+ */
+@Composable
+private fun ComingSoonBadge() {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(WarningOrange.copy(alpha = 0.15f))
+            .padding(horizontal = 6.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = "COMING SOON",
+            style = MaterialTheme.typography.labelSmall,
+            color = WarningOrange
         )
     }
 }
@@ -597,9 +570,7 @@ private fun BuySignalIndicatorWaitPreview() {
     WistTheme {
         BuySignalIndicator(
             signal = BuySignal.WAIT_FOR_OFFER,
-            modifier = Modifier.padding(
-                WistDimensions.SpacingLg
-            )
+            modifier = Modifier.padding(WistDimensions.SpacingLg)
         )
     }
 }
@@ -610,9 +581,7 @@ private fun BuySignalIndicatorGoodPreview() {
     WistTheme {
         BuySignalIndicator(
             signal = BuySignal.GOOD_TO_BUY,
-            modifier = Modifier.padding(
-                WistDimensions.SpacingLg
-            )
+            modifier = Modifier.padding(WistDimensions.SpacingLg)
         )
     }
 }

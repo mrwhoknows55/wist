@@ -118,6 +118,7 @@ fun App(
                         onLoginSuccess = { token, userId ->
                             tokenStorage.saveToken(token)
                             tokenStorage.saveCacheScopeUserId(userId)
+                            tokenStorage.clearSecondOpinionDismissed()
                             apiClient.setCacheScope(userId)
                             backStack.clear()
                             backStack.add(WishlistListRoute)
@@ -132,6 +133,7 @@ fun App(
                         onSignupSuccess = { token, userId ->
                             tokenStorage.saveToken(token)
                             tokenStorage.saveCacheScopeUserId(userId)
+                            tokenStorage.clearSecondOpinionDismissed()
                             apiClient.setCacheScope(userId)
                             backStack.clear()
                             backStack.add(WishlistListRoute)
@@ -145,7 +147,15 @@ fun App(
                         apiClient = apiClient,
                         onWishlistClick = { wishlistId ->
                             backStack.add(WishlistDetailRoute(wishlistId = wishlistId))
-                        }
+                        },
+                        onLogout = {
+                            apiClient.clearToken()
+                            tokenStorage.clearToken()
+                            backStack.clear()
+                            backStack.add(LoginRoute)
+                        },
+                        isSecondOpinionDismissed = tokenStorage.isSecondOpinionDismissed(),
+                        onDismissSecondOpinion = { tokenStorage.saveSecondOpinionDismissed(true) }
                     )
                 }
 

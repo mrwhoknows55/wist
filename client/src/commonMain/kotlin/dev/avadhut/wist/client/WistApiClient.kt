@@ -18,6 +18,9 @@ import io.ktor.client.request.bearerAuth
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
 private const val WIST_CLIENT_REQUEST_TIMEOUT_MS = 240_000L
@@ -36,6 +39,9 @@ class WistApiClient(
 
     private var homeWishlistListForceRemotePending = true
     private val detailWishlistsSyncedRemotely = mutableSetOf<Int>()
+
+    private val _wishlistListVersion = MutableStateFlow(0)
+    val wishlistListVersion: StateFlow<Int> = _wishlistListVersion.asStateFlow()
 
     // todo: in future use it for queueing things add offline
 
@@ -139,6 +145,12 @@ class WistApiClient(
     fun invalidateWishlistDetail(wishlistId: Int) {
         detailWishlistsSyncedRemotely.remove(wishlistId)
         println("[Wist] WistApiClient: invalidateWishlistDetail wishlistId=$wishlistId")
+    }
+
+    fun invalidateWishlistList() {
+        homeWishlistListForceRemotePending = true
+        _wishlistListVersion.value++
+        println("[Wist] WistApiClient: invalidateWishlistList version=${_wishlistListVersion.value}")
     }
 
     fun setToken(token: String) {
